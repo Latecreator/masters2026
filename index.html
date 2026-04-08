@@ -976,7 +976,11 @@ let state = {
   status: 'not_started', // not_started | in_progress | complete
   windR3: null,
   momentum: {}, // id -> bool (improved R2 vs R1)
-  awaitingCut: false // true after R2 until user confirms cut line
+  awaitingCut: false, // true after R2 until user confirms cut line
+  tiebreak: [],        // ids of players in current playoff
+  tiebreakHole: 0,     // current playoff hole number (1-based)
+  tiebreakScores: {},  // id -> score for current playoff hole
+  tiebreakWinner: null // id of playoff winner
 };
 
 // ============================================================
@@ -1021,6 +1025,117 @@ function resolveCapitulation() {
   if (d <= 65) return { score: 7, d100: d, label: '+7' };
   if (d <= 85) return { score: 6, d100: d, label: '+6' };
   return { score: 5, d100: d, label: '+5' };
+}
+
+// ============================================================
+// PLAYOFF
+// ============================================================
+function lookupPlayoffScore(total) {
+  if (total >= 17) return { score: -2, label: 'Eagle' };
+  if (total >= 14) return { score: -1, label: 'Birdie' };
+  if (total >= 10) return { score:  0, label: 'Par' };
+  if (total >= 7)  return { score:  1, label: 'Bogey' };
+  if (total >= 5)  return { score:  2, label: 'Double Bogey' };
+  return             { score:  3, label: 'Worse' };
+}
+
+function rollPlayoffHoleForPlayer(player) {
+  const mod = statMod(player.clt);
+  const dice = [Math.ceil(Math.random()*6), Math.ceil(Math.random()*6), Math.ceil(Math.random()*6)];
+  const rawRoll = dice[0] + dice[1] + dice[2];
+  const total = rawRoll + mod;
+  const result = lookupPlayoffScore(total);
+  let score = result.score;
+  const acRoll = rollD6();
+  let acNote = '';
+  if (acRoll === 1) { score += 1; acNote = `Amen Corner bites (d6: ${acRoll}) — +1`; }
+  const scoreSign = score === 0 ? 'E' : score < 0 ? `${score}` : `+${score}`;
+  const labelMap = { '-2': 'Eagle', '-1': 'Birdie', '0': 'Par', '1': 'Bogey', '2': 'Double Bogey', '3': 'Worse' };
+  const label = labelMap[String(score)] || (score < -2 ? 'Eagle' : 'Worse');
+  return { player, score, label, scoreSign, dice, rawRoll, total, mod, acRoll, acNote };
+}
+
+function detectTie(activePlayers) {
+  if (activePlayers.length < 2) return [];
+  const topScore = getPlayerTotal(activePlayers[0].id);
+  const tied = activePlayers.filter(p => getPlayerTotal(p.id) === topScore);
+  return tied.length > 1 ? tied.map(p => p.id) : [];
+}
+
+function runFullPlayoff(tiedIds) {
+  let remaining = [...tiedIds];
+  let holeNum = 0;
+  while (remaining.length > 1 && holeNum < 10) {
+    holeNum++;
+    const scores = {};
+    remaining.forEach(id => {
+      const p = PLAYERS.find(x => x.id === id);
+      scores[id] = rollPlayoffHoleForPlayer(p).score;
+    });
+    const minScore = Math.min(...Object.values(scores));
+    remaining = remaining.filter(id => scores[id] === minScore);
+  }
+  // Safety cap: highest CLT wins
+  if (remaining.length > 1) {
+    const maxClt = Math.max(...remaining.map(id => PLAYERS.find(p => p.id === id).clt));
+    remaining = remaining.filter(id => PLAYERS.find(p => p.id === id).clt === maxClt);
+  }
+  return { winnerId: remaining[0], holes: holeNum };
+}
+
+function renderPlayoffSection() {
+  state.tiebreakHole++;
+  const tiedPlayers = state.tiebreak.map(id => PLAYERS.find(p => p.id === id));
+  const topScore = getPlayerTotal(tiedPlayers[0].id);
+  const topLabel = topScore === 0 ? 'E' : topScore < 0 ? `${topScore}` : `+${topScore}`;
+
+  // Roll all tied players
+  const results = tiedPlayers.map(p => rollPlayoffHoleForPlayer(p));
+  state.tiebreakScores = {};
+  results.forEach(r => { state.tiebreakScores[r.player.id] = r.score; });
+
+  // Build roll breakdown HTML
+  let rollsHtml = results.map(r => {
+    const scoreColour = r.score < 0 ? 'var(--gold)' : r.score === 0 ? 'var(--cream)' : '#cc4444';
+    return `<div style="margin:6px 0; padding:6px 10px; background:rgba(255,255,255,0.04); border-left:2px solid var(--green-light);">
+      <strong style="color:var(--cream);">${r.player.name}</strong>
+      <span style="color:var(--grey); font-size:12px;"> — 3d6: [${r.dice.join(',')}] = ${r.rawRoll}, CLT mod ${r.mod >= 0 ? '+'+r.mod : r.mod}, total ${r.total}</span><br>
+      <span style="color:${scoreColour}; font-weight:bold;">${r.label} (${r.scoreSign})</span>
+      ${r.acNote ? `<span class="roll-detail"> · ${r.acNote}</span>` : ''}
+    </div>`;
+  }).join('');
+
+  // Determine outcome
+  const minScore = Math.min(...results.map(r => r.score));
+  const winners = results.filter(r => r.score === minScore);
+
+  let outcomeHtml;
+  if (winners.length === 1) {
+    const w = winners[0];
+    state.tiebreakWinner = w.player.id;
+    const holeOrd = state.tiebreakHole === 1 ? '1st' : state.tiebreakHole === 2 ? '2nd' : state.tiebreakHole === 3 ? '3rd' : `${state.tiebreakHole}th`;
+    outcomeHtml = `<div style="margin-top:12px;">
+      <strong style="color:var(--gold); font-size:16px;">🏆 ${w.player.name} wins The Masters 2026</strong><br>
+      <span class="roll-detail">72-hole score: ${topLabel} · Won at the ${holeOrd} playoff hole with a ${w.label.toLowerCase()}</span><br>
+      <span class="roll-detail">${state.cut.length} players missed the cut</span><br>
+      <span style="font-size:12px; color:var(--grey);">Check the Leaderboard tab for full results.</span>
+    </div>`;
+    showToast(`${w.player.name} wins via playoff!`);
+  } else {
+    // Still tied — offer next hole
+    state.tiebreak = winners.map(r => r.player.id);
+    const stillTied = winners.map(r => r.player.name).join(' & ');
+    outcomeHtml = `<div style="margin-top:12px;">
+      <span style="color:var(--grey);">Still tied: ${stillTied} — both made ${winners[0].label.toLowerCase()}</span><br>
+      <button class="mode-btn primary" onclick="renderPlayoffSection()" style="margin-top:8px;">⛳ Play Hole ${state.tiebreakHole + 1}</button>
+    </div>`;
+  }
+
+  document.getElementById('narrative-box').innerHTML =
+    `<strong style="color:var(--gold); font-size:15px;">⚡ PLAYOFF — Hole ${state.tiebreakHole}</strong>
+     <span class="roll-detail" style="display:block; margin-bottom:8px;">Players tied at ${topLabel}: ${tiedPlayers.map(p=>p.name).join(', ')}</span>
+     ${rollsHtml}
+     ${outcomeHtml}`;
 }
 
 // ============================================================
@@ -1152,6 +1267,10 @@ function initScores() {
   state.specials = {};
   state.cut = [];
   state.momentum = {};
+  state.tiebreak = [];
+  state.tiebreakHole = 0;
+  state.tiebreakScores = {};
+  state.tiebreakWinner = null;
   PLAYERS.forEach(p => {
     state.scores[p.id] = [null, null, null, null];
     state.specials[p.id] = [false, false, false, false];
@@ -1459,15 +1578,26 @@ function quickSimRound() {
 
   // Winner announcement after R4
   if (state.status === 'complete') {
-    const winner = sortedPlayers().filter(p => !state.cut.includes(p.id))[0];
-    const wTotal = getPlayerTotal(winner.id);
-    const wLabel = wTotal === 0 ? 'E' : wTotal < 0 ? `${wTotal}` : `+${wTotal}`;
-    document.getElementById('narrative-box').innerHTML =
-      `<strong style="color:var(--gold); font-size:16px;">🏆 ${winner.name} wins The Masters 2026</strong><br>
-       <span class="roll-detail">Final score: ${wLabel}</span><br>
-       <span class="roll-detail">${state.cut.length} players missed the cut</span><br>
-       <span style="font-size:12px; color:var(--grey);">Check the Leaderboard tab for full results.</span>`;
-    showToast(`${winner.name} wins! Check the leaderboard.`);
+    const activePlayers = sortedPlayers().filter(p => !state.cut.includes(p.id));
+    const tiedIds = detectTie(activePlayers);
+    if (tiedIds.length > 1) {
+      state.tiebreak = tiedIds;
+      state.tiebreakHole = 0;
+      state.tiebreakScores = {};
+      state.tiebreakWinner = null;
+      saveState();
+      renderPlayoffSection();
+    } else {
+      const winner = activePlayers[0];
+      const wTotal = getPlayerTotal(winner.id);
+      const wLabel = wTotal === 0 ? 'E' : wTotal < 0 ? `${wTotal}` : `+${wTotal}`;
+      document.getElementById('narrative-box').innerHTML =
+        `<strong style="color:var(--gold); font-size:16px;">🏆 ${winner.name} wins The Masters 2026</strong><br>
+         <span class="roll-detail">Final score: ${wLabel}</span><br>
+         <span class="roll-detail">${state.cut.length} players missed the cut</span><br>
+         <span style="font-size:12px; color:var(--grey);">Check the Leaderboard tab for full results.</span>`;
+      showToast(`${winner.name} wins! Check the leaderboard.`);
+    }
   }
 
   // Flash recent rows
@@ -1497,13 +1627,22 @@ function fullSim() {
   state.status = 'complete';
 
   const sorted = sortedPlayers().filter(p => !state.cut.includes(p.id));
-  const winner = sorted[0];
+  const tiedIds = detectTie(sorted);
+  let winner, playoffNote = '';
+  if (tiedIds.length > 1) {
+    const playoff = runFullPlayoff(tiedIds);
+    winner = PLAYERS.find(p => p.id === playoff.winnerId);
+    const holeOrd = playoff.holes === 1 ? '1st' : playoff.holes === 2 ? '2nd' : playoff.holes === 3 ? '3rd' : `${playoff.holes}th`;
+    playoffNote = `<br><span class="roll-detail">🏌️ Won via playoff — decided at the ${holeOrd} hole</span>`;
+  } else {
+    winner = sorted[0];
+  }
   const wTotal = getPlayerTotal(winner.id);
   const wLabel = wTotal === 0 ? 'E' : wTotal < 0 ? `${wTotal}` : `+${wTotal}`;
 
   document.getElementById('narrative-box').innerHTML =
     `<strong style="color:var(--gold); font-size:16px;">🏆 ${winner.name} wins The Masters 2026</strong><br>
-     <span class="roll-detail">Final score: ${wLabel}</span><br>
+     <span class="roll-detail">Final score: ${wLabel}</span>${playoffNote}<br>
      <span class="roll-detail">${state.cut.length} players missed the cut at +${COURSE_CONFIG.cutLine}</span><br>
      <span style="font-size:12px; color:var(--grey);">Check the Leaderboard tab for full results.</span>`;
   document.getElementById('sim-results').innerHTML = '';
@@ -1914,6 +2053,10 @@ function loadState() {
     if (!state.specials[p.id]) state.specials[p.id] = [false,false,false,false];
   });
   if (state.awaitingCut === undefined) state.awaitingCut = false;
+  if (state.tiebreak === undefined) state.tiebreak = [];
+  if (state.tiebreakHole === undefined) state.tiebreakHole = 0;
+  if (state.tiebreakScores === undefined) state.tiebreakScores = {};
+  if (state.tiebreakWinner === undefined) state.tiebreakWinner = null;
 }
 
 // ============================================================
