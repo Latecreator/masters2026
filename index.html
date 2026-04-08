@@ -1,0 +1,2312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Masters 2026 — Golf Simulator</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --green-dark: #0a2818;
+    --green-mid: #1a4a2e;
+    --green-light: #2a6040;
+    --gold: #c9a84c;
+    --gold-light: #e8c96a;
+    --cream: #f5f0e8;
+    --red: #cc3333;
+    --maroon: #7a1a1a;
+    --white: #ffffff;
+    --grey: #8a9a8a;
+  }
+
+  body {
+    background: var(--green-dark);
+    color: var(--cream);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    min-height: 100vh;
+  }
+
+  /* HEADER */
+  header {
+    background: var(--green-dark);
+    border-bottom: 2px solid var(--gold);
+    padding: 16px 24px;
+    text-align: center;
+  }
+  .header-flag { font-size: 28px; margin-bottom: 4px; }
+  header h1 {
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 28px;
+    font-weight: normal;
+    color: var(--gold);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+  }
+  header .subtitle {
+    font-size: 12px;
+    color: var(--grey);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-top: 2px;
+  }
+
+  /* TABS */
+  nav {
+    display: flex;
+    background: var(--green-mid);
+    border-bottom: 1px solid var(--green-light);
+  }
+  nav button {
+    flex: 1;
+    padding: 12px 8px;
+    background: none;
+    border: none;
+    color: var(--grey);
+    font-size: 12px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    transition: all 0.2s;
+  }
+  nav button:hover { color: var(--cream); }
+  nav button.active {
+    color: var(--gold);
+    border-bottom-color: var(--gold);
+  }
+
+  /* CONTENT */
+  .tab-content { display: none; padding: 16px; max-width: 900px; margin: 0 auto; }
+  .tab-content.active { display: block; }
+
+  /* ROUND INDICATOR */
+  .round-bar {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .round-badge {
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 11px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    border: 1px solid var(--green-light);
+    color: var(--grey);
+  }
+  .round-badge.active {
+    background: var(--gold);
+    color: var(--green-dark);
+    border-color: var(--gold);
+    font-weight: bold;
+  }
+  .round-badge.done {
+    background: var(--green-light);
+    color: var(--cream);
+    border-color: var(--green-light);
+  }
+
+  /* LEADERBOARD */
+  .leaderboard-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  .leaderboard-table th {
+    background: var(--green-mid);
+    color: var(--gold);
+    padding: 8px 6px;
+    text-align: center;
+    font-weight: normal;
+    letter-spacing: 1px;
+    font-size: 11px;
+    text-transform: uppercase;
+    border-bottom: 1px solid var(--gold);
+  }
+  .leaderboard-table th:nth-child(3) { text-align: left; padding-left: 10px; }
+  .leaderboard-table td {
+    padding: 7px 6px;
+    text-align: center;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+  }
+  .leaderboard-table td:nth-child(3) { text-align: left; padding-left: 10px; }
+  .leaderboard-table tr:nth-child(even) { background: rgba(255,255,255,0.03); }
+  .leaderboard-table tr:hover { background: rgba(201,168,76,0.08); }
+
+  .score-under { color: var(--red); font-weight: bold; }
+  .score-over { color: var(--cream); }
+  .score-even { color: var(--grey); }
+
+  .pos-col { color: var(--grey); font-size: 11px; width: 36px; }
+  .country-col { color: var(--grey); font-size: 11px; width: 36px; }
+  .name-col { font-size: 13px; }
+  .round-col { width: 42px; font-size: 12px; }
+  .total-col { width: 52px; font-weight: bold; font-size: 14px; }
+  .player-name-link { cursor: pointer; }
+  .player-name-link:hover { color: var(--gold); text-decoration: underline; }
+  .action-col { width: 58px; padding: 3px 4px !important; }
+  .row-sim-btn {
+    padding: 2px 7px;
+    background: var(--green-mid);
+    border: 1px solid var(--green-light);
+    color: var(--grey);
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 10px;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+    transition: all 0.15s;
+  }
+  .row-sim-btn:hover { border-color: var(--gold); color: var(--gold); background: rgba(201,168,76,0.1); }
+
+  .leader-row td { background: rgba(201,168,76,0.12) !important; }
+  .leader-row .name-col { color: var(--gold); }
+
+  .cut-row {
+    background: rgba(122, 26, 26, 0.15) !important;
+    color: var(--grey) !important;
+    font-style: italic;
+  }
+  .cut-separator td {
+    background: var(--maroon) !important;
+    color: #ffaaaa;
+    font-size: 11px;
+    text-align: center;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 4px;
+  }
+
+  .charge-cell { color: var(--gold-light); font-weight: bold; }
+  .cap-cell { color: #ff6666; font-weight: bold; }
+
+  /* FLASH ANIMATIONS */
+  /* ---- Score splash overlay ---- */
+  #score-splash {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    z-index: 800;
+    opacity: 0;
+    transition: opacity 0.15s;
+  }
+  #score-splash.show { opacity: 1; }
+  #score-splash.fade-out { opacity: 0; transition: opacity 0.5s; }
+  .splash-player {
+    font-size: 18px;
+    font-weight: bold;
+    color: #fff;
+    text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 0 8px #000;
+    letter-spacing: 1px;
+    margin-bottom: 6px;
+  }
+  .splash-score {
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 96px;
+    font-weight: bold;
+    line-height: 1;
+    color: #fff;
+    text-shadow: -3px -3px 0 #000, 3px -3px 0 #000, -3px 3px 0 #000, 3px 3px 0 #000,
+                 -2px 0 0 #000, 2px 0 0 #000, 0 -2px 0 #000, 0 2px 0 #000,
+                 0 0 20px rgba(0,0,0,0.8);
+    animation: splashPop 0.2s cubic-bezier(0.18, 1.4, 0.4, 1) forwards;
+  }
+  .splash-score.is-charge { color: var(--gold-light); }
+  .splash-score.is-cap { color: #ff8888; }
+  @keyframes splashPop {
+    from { transform: scale(0.5); }
+    to   { transform: scale(1); }
+  }
+
+  @keyframes chargeFlash {
+    0% { background: rgba(201,168,76,0.4); }
+    100% { background: transparent; }
+  }
+  @keyframes capFlash {
+    0% { background: rgba(122,26,26,0.6); }
+    100% { background: transparent; }
+  }
+  .flash-charge { animation: chargeFlash 1.5s ease-out; }
+  .flash-cap { animation: capFlash 1.5s ease-out; }
+
+  /* PLAY PANEL */
+  .play-modes {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+  .mode-btn {
+    padding: 10px 20px;
+    background: var(--green-mid);
+    border: 1px solid var(--green-light);
+    color: var(--cream);
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 13px;
+    transition: all 0.2s;
+  }
+  .mode-btn:hover { border-color: var(--gold); color: var(--gold); }
+  .mode-btn.primary {
+    background: var(--gold);
+    color: var(--green-dark);
+    border-color: var(--gold);
+    font-weight: bold;
+  }
+  .mode-btn.primary:hover { background: var(--gold-light); }
+  .mode-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .narrative-box {
+    background: var(--green-mid);
+    border: 1px solid var(--green-light);
+    border-radius: 6px;
+    padding: 16px;
+    min-height: 120px;
+    font-size: 13px;
+    line-height: 1.7;
+    color: var(--cream);
+  }
+  .narrative-box .event-charge {
+    color: var(--gold-light);
+    font-weight: bold;
+    font-size: 15px;
+    display: block;
+    margin: 8px 0;
+  }
+  .narrative-box .event-cap {
+    color: #ff6666;
+    font-weight: bold;
+    font-size: 15px;
+    display: block;
+    margin: 8px 0;
+  }
+  .narrative-box .roll-detail {
+    color: var(--grey);
+    font-size: 12px;
+  }
+
+  select, .player-select {
+    background: var(--green-mid);
+    border: 1px solid var(--green-light);
+    color: var(--cream);
+    padding: 8px 12px;
+    border-radius: 4px;
+    font-size: 13px;
+    cursor: pointer;
+    min-width: 200px;
+  }
+  select:focus { outline: none; border-color: var(--gold); }
+
+  /* PLAYER CARDS */
+  .players-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 12px;
+  }
+  .player-card {
+    background: var(--green-mid);
+    border: 1px solid var(--green-light);
+    border-radius: 6px;
+    padding: 14px;
+  }
+  .player-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 10px;
+  }
+  .player-card-name {
+    font-family: Georgia, serif;
+    font-size: 14px;
+    color: var(--cream);
+  }
+  .player-card-country {
+    font-size: 11px;
+    color: var(--grey);
+    letter-spacing: 1px;
+  }
+  .stat-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 5px;
+  }
+  .stat-label {
+    font-size: 10px;
+    color: var(--grey);
+    letter-spacing: 1px;
+    width: 32px;
+    text-transform: uppercase;
+  }
+  .stat-bar-bg {
+    flex: 1;
+    height: 6px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .stat-bar-fill {
+    height: 100%;
+    border-radius: 3px;
+    background: var(--gold);
+    transition: width 0.3s;
+  }
+  .stat-val {
+    font-size: 11px;
+    color: var(--cream);
+    width: 12px;
+    text-align: right;
+  }
+  .amateur-tag {
+    font-size: 9px;
+    color: var(--grey);
+    background: rgba(255,255,255,0.1);
+    padding: 1px 5px;
+    border-radius: 3px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  /* TOURNAMENT PANEL */
+  .info-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+  .info-card {
+    background: var(--green-mid);
+    border: 1px solid var(--green-light);
+    border-radius: 6px;
+    padding: 14px;
+  }
+  .info-card h3 {
+    font-family: Georgia, serif;
+    color: var(--gold);
+    font-size: 13px;
+    font-weight: normal;
+    margin-bottom: 10px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+  .info-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    padding: 3px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+  }
+  .info-row .label { color: var(--grey); }
+  .info-row .val { color: var(--cream); }
+
+  .danger-btn {
+    padding: 8px 16px;
+    background: transparent;
+    border: 1px solid var(--maroon);
+    color: #ff8888;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    margin-top: 12px;
+  }
+  .danger-btn:hover { background: var(--maroon); color: var(--cream); }
+
+  /* QUICK SIM RESULTS */
+  .sim-results {
+    margin-top: 16px;
+    font-size: 12px;
+    color: var(--grey);
+    max-height: 200px;
+    overflow-y: auto;
+  }
+  .sim-result-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 3px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+  .sim-result-row .charge { color: var(--gold-light); }
+  .sim-result-row .cap { color: #ff6666; }
+
+  /* SEARCH */
+  .search-bar {
+    width: 100%;
+    background: var(--green-mid);
+    border: 1px solid var(--green-light);
+    color: var(--cream);
+    padding: 8px 12px;
+    border-radius: 4px;
+    font-size: 13px;
+    margin-bottom: 12px;
+  }
+  .search-bar:focus { outline: none; border-color: var(--gold); }
+
+  /* MISC */
+  .section-title {
+    font-family: Georgia, serif;
+    color: var(--gold);
+    font-size: 15px;
+    font-weight: normal;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid var(--green-light);
+  }
+  .tag { font-size: 10px; color: var(--grey); }
+  .mb8 { margin-bottom: 8px; }
+  .mb16 { margin-bottom: 16px; }
+  .flex-gap { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--green-mid);
+    border: 1px solid var(--gold);
+    color: var(--cream);
+    padding: 10px 20px;
+    border-radius: 6px;
+    font-size: 13px;
+    z-index: 999;
+    opacity: 0;
+    transition: opacity 0.3s;
+    pointer-events: none;
+  }
+  .toast.show { opacity: 1; }
+
+  @media (max-width: 600px) {
+    .info-grid { grid-template-columns: 1fr; }
+    .players-grid { grid-template-columns: 1fr; }
+    .leaderboard-table { font-size: 11px; }
+  }
+
+  /* ---- Manual entry ---- */
+  .manual-entry-table { width:100%; border-collapse:collapse; font-size:13px; margin-bottom:12px; }
+  .manual-entry-table th { background:var(--green-light); color:var(--cream); padding:6px 8px; text-align:left; font-size:11px; letter-spacing:1px; }
+  .manual-entry-table td { padding:5px 8px; border-bottom:1px solid #1e5a35; }
+  .manual-entry-table tr:hover td { background:rgba(255,255,255,0.04); }
+  .score-input { width:70px; background:var(--green-dark); border:1px solid var(--green-light); color:var(--cream); padding:4px 8px; border-radius:4px; font-size:13px; }
+  .score-input:focus { outline:none; border-color:var(--gold); }
+  .manual-actions { display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; }
+  .export-buttons { display:flex; gap:8px; flex-wrap:wrap; margin-top:12px; }
+
+  /* ---- Print styles ---- */
+  #print-scoresheet { display:none; }
+
+  @media print {
+    body > * { display:none !important; }
+    #print-scoresheet { display:block !important; color:#111; background:#fff; font-family: Arial, sans-serif; padding:10px; }
+    .print-header { text-align:center; border-bottom:2px solid #111; padding-bottom:10px; margin-bottom:14px; }
+    .print-header h2 { margin:0 0 4px; font-size:20px; letter-spacing:2px; }
+    .print-header p { margin:2px 0; font-size:11px; }
+    .print-table { width:100%; border-collapse:collapse; font-size:10px; margin-bottom:14px; }
+    .print-table th { background:#1a3a2a; color:#fff; padding:4px 6px; text-align:left; }
+    .print-table td { padding:4px 6px; border-bottom:1px solid #ccc; }
+    .print-table .blank-col { color:#aaa; letter-spacing:2px; }
+    .print-entry-cell { text-align:center; padding:4px 6px; }
+    .entry-line { border-bottom: 1px solid #888; margin: 6px 8px 2px; height: 14px; }
+    .stat-mod-col { font-size:9px; color:#444; padding:3px 2px !important; }
+    .print-table tr:nth-child(even) td { background:#f5f5f5; }
+    .print-cut-line { text-align:center; font-weight:bold; font-size:11px; margin:8px 0; border-top:2px solid #333; padding-top:6px; color:#666; }
+    .print-reminder { font-size:9px; border:1px solid #999; padding:8px 10px; margin-top:12px; line-height:1.6; }
+    .print-reminder strong { font-size:10px; }
+    .print-weekend-header { font-size:13px; font-weight:bold; margin-bottom:6px; text-align:center; }
+  }
+  /* ---- Chart tables ---- */
+  .chart-section-title { color:var(--gold); font-size:11px; letter-spacing:1px; text-transform:uppercase; margin-bottom:5px; font-family:Georgia,serif; }
+  .chart-table { width:100%; border-collapse:collapse; font-size:12px; margin-bottom:8px; }
+  .chart-table th { background:var(--green-light); color:var(--cream); padding:4px 8px; text-align:left; font-size:10px; letter-spacing:1px; }
+  .chart-table td { padding:4px 8px; border-bottom:1px solid rgba(255,255,255,0.05); color:var(--cream); }
+  .chart-table td:first-child { color:var(--grey); }
+
+  /* Modal overlay */
+  .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.78); z-index:500; display:flex; align-items:flex-start; justify-content:center; overflow-y:auto; padding:16px; }
+  .modal-box { background:var(--green-dark); border:1px solid var(--gold); border-radius:8px; padding:20px; width:100%; max-width:500px; position:relative; margin:auto; }
+  .modal-close-btn { position:absolute; top:10px; right:14px; background:none; border:none; color:var(--grey); font-size:20px; cursor:pointer; line-height:1; }
+  .modal-close-btn:hover { color:var(--cream); }
+
+  /* Modal player header */
+  .modal-player-name { font-family:Georgia,serif; font-size:20px; color:var(--gold); margin-bottom:2px; }
+  .modal-player-meta { font-size:12px; color:var(--grey); margin-bottom:12px; }
+
+  /* Vertical stat bars */
+  .modal-stats-row { display:flex; gap:8px; margin:10px 0 14px; }
+  .modal-stat-col { flex:1; text-align:center; }
+  .modal-stat-label { font-size:9px; color:var(--grey); letter-spacing:1px; text-transform:uppercase; margin-bottom:3px; display:block; }
+  .modal-stat-bar-bg { height:56px; background:rgba(255,255,255,0.1); border-radius:3px; position:relative; overflow:hidden; }
+  .modal-stat-bar-fill { position:absolute; bottom:0; left:0; right:0; background:var(--gold); border-radius:3px; }
+  .modal-stat-val { font-size:15px; font-weight:bold; color:var(--cream); margin-top:3px; display:block; }
+  .modal-stat-col.active-stat .modal-stat-label { color:var(--gold-light); }
+  .modal-stat-col.active-stat .modal-stat-val { color:var(--gold-light); }
+  .modal-stat-col.active-stat .modal-stat-bar-fill { background:var(--gold-light); }
+
+  /* Round banner */
+  .modal-round-banner { background:var(--green-mid); border:1px solid var(--green-light); border-radius:4px; padding:6px 12px; font-size:12px; color:var(--grey); margin-bottom:10px; text-align:center; letter-spacing:1px; text-transform:uppercase; }
+  .modal-round-banner strong { color:var(--gold); }
+
+  /* Score lookup grid */
+  .score-lookup-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:3px; margin-bottom:10px; }
+  .lookup-cell { background:var(--green-mid); border:1px solid var(--green-light); border-radius:3px; padding:4px 3px; text-align:center; }
+  .lookup-cell .lc-range { font-size:9px; color:var(--grey); display:block; }
+  .lookup-cell .lc-score { font-size:12px; font-weight:bold; color:var(--cream); display:block; }
+  .lookup-cell.lc-charge { border-color:var(--gold); }
+  .lookup-cell.lc-charge .lc-score { color:var(--gold-light); }
+  .lookup-cell.lc-cap { border-color:#993333; }
+  .lookup-cell.lc-cap .lc-score { color:#ff8888; }
+  .lookup-cell.lc-highlight { background:var(--gold) !important; border-color:var(--gold-light) !important; }
+  .lookup-cell.lc-highlight .lc-range, .lookup-cell.lc-highlight .lc-score { color:var(--green-dark) !important; }
+
+  /* d100 sub lookup */
+  .d100-lookup-grid { display:grid; grid-template-columns:repeat(5,1fr); gap:3px; margin:6px 0 10px; }
+  .d100-cell { background:var(--green-mid); border:1px solid var(--green-light); border-radius:3px; padding:3px 2px; text-align:center; }
+  .d100-cell .dc-range { font-size:8px; color:var(--grey); display:block; }
+  .d100-cell .dc-score { font-size:11px; font-weight:bold; color:var(--cream); display:block; }
+  .d100-cell.dc-highlight { background:var(--gold) !important; border-color:var(--gold-light) !important; }
+  .d100-cell.dc-highlight .dc-range, .d100-cell.dc-highlight .dc-score { color:var(--green-dark) !important; }
+
+  /* Dice */
+  .modal-dice-area { text-align:center; margin:10px 0; }
+  .dice-row { display:flex; justify-content:center; gap:10px; align-items:center; margin-bottom:8px; }
+  .die { width:50px; height:50px; background:var(--cream); color:var(--green-dark); border-radius:8px; font-size:26px; font-weight:bold; display:flex; align-items:center; justify-content:center; border:2px solid var(--gold); font-family:Georgia,serif; transition:background 0.2s; }
+  .die.rolling { animation:dieRoll 0.08s infinite; background:var(--gold-light); }
+  .die.settled { background:var(--gold); border-color:var(--gold-light); transform:scale(1.06); }
+  @keyframes dieRoll { 0%{transform:rotate(-4deg) scale(1.06)} 50%{transform:rotate(4deg) scale(0.94)} 100%{transform:rotate(-4deg) scale(1.06)} }
+  .dice-mod-label { font-size:13px; color:var(--grey); }
+  .dice-total-row { font-size:14px; color:var(--cream); }
+  .dice-total-val { color:var(--gold); font-size:20px; font-weight:bold; }
+
+  /* D100 */
+  .d100-die-wrapper { text-align:center; margin:6px 0; }
+  .d100-die { display:inline-flex; align-items:center; justify-content:center; width:64px; height:64px; background:var(--green-mid); color:var(--gold); border-radius:50%; font-size:20px; font-weight:bold; border:2px solid var(--gold); }
+  .d100-die.rolling { animation:dieRoll 0.08s infinite; background:var(--green-light); }
+  .d100-die.settled { background:var(--gold); color:var(--green-dark); }
+
+  /* Result banner */
+  .modal-result-banner { padding:10px 14px; border-radius:6px; text-align:center; font-size:14px; font-weight:bold; margin:8px 0; border:1px solid var(--green-light); background:var(--green-mid); }
+  .modal-result-banner.charge-result { background:rgba(201,168,76,0.2); border-color:var(--gold); color:var(--gold-light); }
+  .modal-result-banner.cap-result { background:rgba(122,26,26,0.3); border-color:#993333; color:#ff8888; }
+
+  /* Modal bottom rows */
+  .modal-manual-row { display:flex; gap:8px; align-items:center; padding-top:10px; border-top:1px solid var(--green-light); margin-top:8px; }
+  .modal-action-row { display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; }
+
+  /* Cut modal */
+  .cut-modal-info { font-size:13px; color:var(--cream); margin-bottom:12px; line-height:1.8; }
+  .cut-adjust-row { display:flex; gap:8px; align-items:center; margin:10px 0; }
+  .cut-number-input { width:70px; background:var(--green-dark); border:1px solid var(--green-light); color:var(--cream); padding:6px 8px; border-radius:4px; font-size:14px; text-align:center; }
+  .cut-number-input:focus { outline:none; border-color:var(--gold); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-flag">⛳</div>
+  <h1>The Masters</h1>
+  <div class="subtitle">Augusta National · 2026 · Golf Simulator</div>
+</header>
+
+<nav>
+  <button class="active" onclick="showTab('leaderboard')">Leaderboard</button>
+  <button onclick="showTab('play')">Play</button>
+  <button onclick="showTab('players')">Players</button>
+  <button onclick="showTab('tournament')">Tournament</button>
+</nav>
+
+<!-- LEADERBOARD TAB -->
+<div id="tab-leaderboard" class="tab-content active">
+  <div class="round-bar" id="round-bar"></div>
+  <table class="leaderboard-table" id="leaderboard-table">
+    <thead>
+      <tr>
+        <th class="pos-col">Pos</th>
+        <th class="country-col">Ctry</th>
+        <th>Player</th>
+        <th class="round-col">R1</th>
+        <th class="round-col">R2</th>
+        <th class="round-col">R3</th>
+        <th class="round-col">R4</th>
+        <th class="total-col">Total</th>
+        <th class="action-col"></th>
+      </tr>
+    </thead>
+    <tbody id="leaderboard-body"></tbody>
+  </table>
+</div>
+
+<!-- PLAY TAB -->
+<div id="tab-play" class="tab-content">
+  <div class="section-title">Play Round <span id="current-round-label"></span></div>
+
+  <div class="play-modes">
+    <button class="mode-btn primary" onclick="quickSimRound()" id="btn-quick-sim">Quick Sim Round</button>
+    <button class="mode-btn" onclick="showDetailedPlay()" id="btn-detailed">Detailed Play</button>
+    <button class="mode-btn" onclick="fullSim()" id="btn-full-sim">Full Sim (All 4 Rounds)</button>
+  </div>
+  <div class="play-modes" style="margin-top:8px;">
+    <button class="mode-btn" onclick="showManualEntry()" id="btn-manual" style="border-color:#a0826d;">Enter Scores Manually</button>
+    <button class="mode-btn" onclick="printScoresheet()" id="btn-print" style="border-color:#888;">Print Scoresheet</button>
+  </div>
+
+  <!-- Detailed Play Section -->
+  <div id="detailed-section" style="display:none; margin-bottom:16px;">
+    <div class="flex-gap mb8">
+      <select id="player-select" onchange="loadPlayerForDetailed()"></select>
+      <button class="mode-btn" onclick="rollDetailedRound()" id="btn-roll-detailed">Roll This Round</button>
+    </div>
+    <div id="player-mini-stats" class="mb8" style="font-size:12px; color:var(--grey);"></div>
+  </div>
+
+  <!-- Manual Entry Section -->
+  <div id="manual-section" style="display:none; margin-bottom:16px;">
+    <div class="section-title" id="manual-title" style="font-size:13px; margin-bottom:8px;">Enter Round Scores</div>
+    <div id="manual-entry-table"></div>
+    <div class="manual-actions">
+      <button class="mode-btn primary" onclick="submitManualRound()">Submit Scores</button>
+      <button class="mode-btn" onclick="document.getElementById('manual-section').style.display='none'">Cancel</button>
+    </div>
+  </div>
+
+  <div class="narrative-box" id="narrative-box">
+    <span style="color:var(--grey);">Select a play mode above to begin...</span>
+  </div>
+
+  <div class="sim-results" id="sim-results"></div>
+</div>
+
+<!-- PLAYERS TAB -->
+<div id="tab-players" class="tab-content">
+  <div class="section-title">2026 Field — Player Cards</div>
+  <input type="text" class="search-bar" placeholder="Search players..." oninput="filterPlayers(this.value)" id="player-search">
+  <div class="players-grid" id="players-grid"></div>
+</div>
+
+<!-- TOURNAMENT TAB -->
+<div id="tab-tournament" class="tab-content">
+  <div class="section-title">Tournament Settings</div>
+  <div class="info-grid">
+    <div class="info-card">
+      <h3>Augusta National</h3>
+      <div class="info-row"><span class="label">Tournament</span><span class="val">The Masters 2026</span></div>
+      <div class="info-row"><span class="label">Course Par</span><span class="val">72</span></div>
+      <div class="info-row"><span class="label">Field Size</span><span class="val">93 players</span></div>
+      <div class="info-row"><span class="label">Cut Line</span><span class="val">+3 after R2</span></div>
+      <div class="info-row"><span class="label">Current Round</span><span class="val" id="t-current-round">—</span></div>
+      <div class="info-row"><span class="label">Status</span><span class="val" id="t-status">—</span></div>
+    </div>
+    <div class="info-card">
+      <h3>Game Engine</h3>
+      <div class="info-row"><span class="label">Main Roll</span><span class="val">3d6 + stat mod</span></div>
+      <div class="info-row"><span class="label">Charge</span><span class="val">Total ≥ 17 → d100</span></div>
+      <div class="info-row"><span class="label">Capitulation</span><span class="val">Total ≤ 3 → d100</span></div>
+      <div class="info-row"><span class="label">SHT Save</span><span class="val">d20 + SHT mod</span></div>
+      <div class="info-row"><span class="label">R3 Wind</span><span class="val">d6 (1-2 hard, 5-6 calm)</span></div>
+      <div class="info-row"><span class="label">R4 Pressure</span><span class="val">d20 + CLT mod ≥ 12</span></div>
+    </div>
+    <div class="info-card">
+      <h3>Augusta Rules</h3>
+      <div class="info-row"><span class="label">Par 5 Opp (R1/R3)</span><span class="val">d6 → 5-6 = −1</span></div>
+      <div class="info-row"><span class="label">Amen Corner (R2/R4)</span><span class="val">d6 → 1 = +1</span></div>
+      <div class="info-row"><span class="label">Momentum</span><span class="val">Improve 2 consec. → +1 R4</span></div>
+    </div>
+    <div class="info-card">
+      <h3>Round Stats</h3>
+      <div class="info-row"><span class="label">R1 — Thursday</span><span class="val">APP · No conditions</span></div>
+      <div class="info-row"><span class="label">R2 — Friday</span><span class="val">PUT · Fatigue</span></div>
+      <div class="info-row"><span class="label">R3 — Saturday</span><span class="val">DRV · Wind</span></div>
+      <div class="info-row"><span class="label">R4 — Sunday</span><span class="val">CLT · Pressure</span></div>
+    </div>
+  </div>
+  <div class="info-card" style="margin-top:12px;" id="charts-section">
+    <h3>Game Charts</h3>
+    <!-- Score Table -->
+    <div class="chart-section-title">Score Table (3d6 + stat mod)</div>
+    <table class="chart-table" style="margin-bottom:12px;">
+      <thead><tr><th>Total</th><th>Round Score</th></tr></thead>
+      <tbody>
+        <tr><td>≥ 18</td><td style="color:var(--gold-light);">CHARGE (roll d100)</td></tr>
+        <tr><td>16 – 17</td><td style="color:var(--red);">−4</td></tr>
+        <tr><td>14 – 15</td><td style="color:var(--red);">−3</td></tr>
+        <tr><td>12 – 13</td><td style="color:var(--red);">−2</td></tr>
+        <tr><td>10 – 11</td><td style="color:var(--grey);">E</td></tr>
+        <tr><td>8 – 9</td><td>+2</td></tr>
+        <tr><td>5 – 7</td><td>+4</td></tr>
+        <tr><td>4</td><td>+6</td></tr>
+        <tr><td>≤ 3</td><td style="color:#ff8888;">CAPITULATION (roll d100)</td></tr>
+      </tbody>
+    </table>
+
+    <!-- Charge Table -->
+    <div class="chart-section-title" style="color:var(--gold-light);">Charge Table (d100)</div>
+    <table class="chart-table" style="margin-bottom:12px;">
+      <thead><tr><th>d100</th><th>Round Score</th></tr></thead>
+      <tbody>
+        <tr><td>1 – 10</td><td style="color:var(--gold-light);">−10 (Historic)</td></tr>
+        <tr><td>11 – 30</td><td style="color:var(--red);">−9</td></tr>
+        <tr><td>31 – 60</td><td style="color:var(--red);">−8</td></tr>
+        <tr><td>61 – 85</td><td style="color:var(--red);">−7</td></tr>
+        <tr><td>86 – 100</td><td style="color:var(--red);">−6</td></tr>
+      </tbody>
+    </table>
+
+    <!-- Capitulation Table -->
+    <div class="chart-section-title" style="color:#ff8888;">Capitulation Table (d100)</div>
+    <table class="chart-table">
+      <thead><tr><th>d100</th><th>Round Score</th></tr></thead>
+      <tbody>
+        <tr><td>1 – 10</td><td style="color:#ff6666;">+12 (Catastrophe)</td></tr>
+        <tr><td>11 – 35</td><td>+9</td></tr>
+        <tr><td>36 – 65</td><td>+7</td></tr>
+        <tr><td>66 – 85</td><td>+6</td></tr>
+        <tr><td>86 – 100</td><td>+5</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="info-card" style="margin-top:12px;">
+    <h3>Save &amp; Export</h3>
+    <div style="font-size:12px; color:var(--grey); margin-bottom:10px;">Export your tournament state or load a previously saved game.</div>
+    <div class="export-buttons">
+      <button class="mode-btn primary" onclick="exportJSON()" title="Export full game state — can be re-imported">Export JSON</button>
+      <button class="mode-btn" onclick="exportCSV()" title="Export scores as spreadsheet">Export CSV</button>
+      <button class="mode-btn" onclick="importJSON()" title="Load a previously exported JSON save">Load Game (JSON)</button>
+    </div>
+  </div>
+  <button class="danger-btn" style="margin-top:12px;" onclick="resetTournament()">Reset Tournament</button>
+</div>
+
+<!-- DETAILED ROLL MODAL -->
+<div id="detailed-modal" class="modal-overlay" style="display:none">
+  <div class="modal-box">
+    <button class="modal-close-btn" onclick="closeDetailedModal()">&#x2715;</button>
+    <div class="modal-player-name" id="modal-player-name"></div>
+    <div class="modal-player-meta" id="modal-player-meta"></div>
+    <div class="modal-stats-row" id="modal-stats-row"></div>
+    <div class="modal-round-banner" id="modal-round-banner"></div>
+    <div style="font-size:10px; color:var(--grey); letter-spacing:1px; text-transform:uppercase; margin-bottom:4px;">Score Table</div>
+    <div class="score-lookup-grid" id="modal-score-lookup"></div>
+    <div class="modal-dice-area">
+      <div class="dice-row">
+        <div class="die" id="die-1">?</div>
+        <div class="die" id="die-2">?</div>
+        <div class="die" id="die-3">?</div>
+        <span class="dice-mod-label" id="dice-mod-label"></span>
+      </div>
+      <div class="dice-total-row">Total: <span class="dice-total-val" id="dice-total-val">&#8212;</span></div>
+    </div>
+    <div id="modal-d100-area" style="display:none">
+      <div style="font-size:10px; color:var(--grey); letter-spacing:1px; text-transform:uppercase; margin-bottom:4px;" id="d100-table-label">Charge Table</div>
+      <div class="d100-lookup-grid" id="modal-d100-lookup"></div>
+      <div class="d100-die-wrapper"><div class="d100-die" id="d100-die">?</div></div>
+    </div>
+    <div class="modal-result-banner" id="modal-result-banner" style="display:none"></div>
+    <div class="modal-manual-row">
+      <span style="color:var(--grey); font-size:12px;">Enter score directly:</span>
+      <input type="text" class="score-input" id="modal-manual-input" placeholder="-3">
+      <button class="mode-btn" onclick="applyModalManual()">Use</button>
+    </div>
+    <div class="modal-action-row">
+      <button class="mode-btn primary" id="modal-roll-btn" onclick="rollDiceAnimation()">Roll Dice</button>
+      <button class="mode-btn" id="modal-confirm-btn" onclick="confirmDetailedRoll()" style="display:none; background:var(--green-light); border-color:var(--green-light); color:var(--cream);">Confirm Score</button>
+      <button class="mode-btn" onclick="closeDetailedModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- CUT SUGGESTION MODAL -->
+<div id="cut-modal" class="modal-overlay" style="display:none">
+  <div class="modal-box" style="max-width:420px;">
+    <div class="section-title" style="margin-bottom:12px;">The Cut</div>
+    <div class="cut-modal-info" id="cut-modal-info"></div>
+    <div class="cut-adjust-row">
+      <span style="font-size:13px; color:var(--grey);">Cut line (players above this score are eliminated):</span>
+    </div>
+    <div class="cut-adjust-row">
+      <input type="number" class="cut-number-input" id="cut-line-input" value="3" oninput="previewCut()">
+      <span id="cut-preview" style="font-size:12px; color:var(--grey);"></span>
+    </div>
+    <div class="modal-action-row">
+      <button class="mode-btn primary" onclick="confirmCut()">Apply Cut &amp; Start Weekend</button>
+      <button class="mode-btn" onclick="closeCutModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- PRINT SCORESHEET (hidden on screen, shown on print) -->
+<div id="print-scoresheet"></div>
+
+<div id="score-splash">
+  <div class="splash-player" id="splash-player"></div>
+  <div class="splash-score" id="splash-score"></div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script>
+// ============================================================
+// PLAYER DATA
+// ============================================================
+const PLAYERS = [
+  {"id":"rory-mcilroy","name":"Rory McIlroy","country":"NIR","amateur":false,"drv":5,"app":5,"sht":4,"put":5,"clt":5},
+  {"id":"justin-rose","name":"Justin Rose","country":"ENG","amateur":false,"drv":3,"app":4,"sht":3,"put":3,"clt":4},
+  {"id":"patrick-reed","name":"Patrick Reed","country":"USA","amateur":false,"drv":3,"app":3,"sht":5,"put":3,"clt":5},
+  {"id":"scottie-scheffler","name":"Scottie Scheffler","country":"USA","amateur":false,"drv":4,"app":5,"sht":4,"put":3,"clt":4},
+  {"id":"sungjae-im","name":"Sungjae Im","country":"KOR","amateur":false,"drv":3,"app":3,"sht":3,"put":4,"clt":3},
+  {"id":"bryson-dechambeau","name":"Bryson DeChambeau","country":"USA","amateur":false,"drv":5,"app":3,"sht":2,"put":3,"clt":2},
+  {"id":"ludvig-aberg","name":"Ludvig Åberg","country":"SWE","amateur":false,"drv":4,"app":3,"sht":3,"put":3,"clt":3},
+  {"id":"xander-schauffele","name":"Xander Schauffele","country":"USA","amateur":false,"drv":4,"app":4,"sht":3,"put":4,"clt":4},
+  {"id":"zach-johnson","name":"Zach Johnson","country":"USA","amateur":false,"drv":2,"app":3,"sht":4,"put":4,"clt":4},
+  {"id":"jason-day","name":"Jason Day","country":"AUS","amateur":false,"drv":3,"app":3,"sht":4,"put":5,"clt":3},
+  {"id":"corey-conners","name":"Corey Conners","country":"CAN","amateur":false,"drv":3,"app":4,"sht":2,"put":2,"clt":2},
+  {"id":"harris-english","name":"Harris English","country":"USA","amateur":false,"drv":3,"app":3,"sht":3,"put":3,"clt":3},
+  {"id":"max-homa","name":"Max Homa","country":"USA","amateur":false,"drv":3,"app":3,"sht":3,"put":3,"clt":3},
+  {"id":"bubba-watson","name":"Bubba Watson","country":"USA","amateur":false,"drv":5,"app":2,"sht":4,"put":2,"clt":3},
+  {"id":"jon-rahm","name":"Jon Rahm","country":"ESP","amateur":false,"drv":4,"app":5,"sht":4,"put":4,"clt":5},
+  {"id":"jordan-spieth","name":"Jordan Spieth","country":"USA","amateur":false,"drv":3,"app":4,"sht":5,"put":5,"clt":4},
+  {"id":"tyrrell-hatton","name":"Tyrrell Hatton","country":"ENG","amateur":false,"drv":3,"app":3,"sht":3,"put":3,"clt":3},
+  {"id":"matt-mccarty","name":"Matt McCarty","country":"USA","amateur":false,"drv":3,"app":3,"sht":3,"put":2,"clt":3},
+  {"id":"tom-hoge","name":"Tom Hoge","country":"USA","amateur":false,"drv":2,"app":3,"sht":3,"put":3,"clt":3},
+  {"id":"collin-morikawa","name":"Collin Morikawa","country":"USA","amateur":false,"drv":3,"app":5,"sht":3,"put":3,"clt":4},
+  {"id":"hideki-matsuyama","name":"Hideki Matsuyama","country":"JPN","amateur":false,"drv":3,"app":4,"sht":3,"put":4,"clt":3},
+  {"id":"davis-riley","name":"Davis Riley","country":"USA","amateur":false,"drv":3,"app":2,"sht":3,"put":3,"clt":3},
+  {"id":"tommy-fleetwood","name":"Tommy Fleetwood","country":"ENG","amateur":false,"drv":3,"app":4,"sht":3,"put":3,"clt":3},
+  {"id":"daniel-berger","name":"Daniel Berger","country":"USA","amateur":false,"drv":3,"app":3,"sht":3,"put":3,"clt":3},
+  {"id":"byeong-hun-an","name":"Byeong Hun An","country":"KOR","amateur":false,"drv":3,"app":2,"sht":3,"put":3,"clt":3},
+  {"id":"viktor-hovland","name":"Viktor Hovland","country":"NOR","amateur":false,"drv":4,"app":3,"sht":2,"put":2,"clt":3},
+  {"id":"aaron-rai","name":"Aaron Rai","country":"ENG","amateur":false,"drv":3,"app":3,"sht":3,"put":2,"clt":2},
+  {"id":"michael-kim","name":"Michael Kim","country":"USA","amateur":false,"drv":2,"app":3,"sht":3,"put":3,"clt":2},
+  {"id":"sahith-theegala","name":"Sahith Theegala","country":"USA","amateur":false,"drv":4,"app":3,"sht":2,"put":3,"clt":2},
+  {"id":"denny-mccarthy","name":"Denny McCarthy","country":"USA","amateur":false,"drv":2,"app":2,"sht":3,"put":5,"clt":2},
+  {"id":"joaquin-niemann","name":"Joaquin Niemann","country":"CHI","amateur":false,"drv":5,"app":3,"sht":2,"put":3,"clt":2},
+  {"id":"brian-campbell","name":"Brian Campbell","country":"USA","amateur":false,"drv":2,"app":2,"sht":3,"put":2,"clt":2},
+  {"id":"maverick-mcnealy","name":"Maverick McNealy","country":"USA","amateur":false,"drv":2,"app":3,"sht":3,"put":3,"clt":2},
+  {"id":"rasmus-hojgaard","name":"Rasmus Højgaard","country":"DEN","amateur":false,"drv":3,"app":2,"sht":2,"put":3,"clt":2},
+  {"id":"max-greyserman","name":"Max Greyserman","country":"USA","amateur":false,"drv":2,"app":2,"sht":3,"put":2,"clt":2},
+  {"id":"justin-thomas","name":"Justin Thomas","country":"USA","amateur":false,"drv":4,"app":4,"sht":4,"put":3,"clt":4},
+  {"id":"brian-harman","name":"Brian Harman","country":"USA","amateur":false,"drv":2,"app":3,"sht":5,"put":4,"clt":3},
+  {"id":"patrick-cantlay","name":"Patrick Cantlay","country":"USA","amateur":false,"drv":3,"app":4,"sht":3,"put":5,"clt":4},
+  {"id":"charl-schwartzel","name":"Charl Schwartzel","country":"RSA","amateur":false,"drv":3,"app":2,"sht":3,"put":3,"clt":3},
+  {"id":"matt-fitzpatrick","name":"Matt Fitzpatrick","country":"ENG","amateur":false,"drv":2,"app":4,"sht":3,"put":3,"clt":3},
+  {"id":"nick-taylor","name":"Nick Taylor","country":"CAN","amateur":false,"drv":3,"app":2,"sht":3,"put":3,"clt":2},
+  {"id":"akshay-bhatia","name":"Akshay Bhatia","country":"USA","amateur":false,"drv":4,"app":2,"sht":2,"put":2,"clt":1},
+  {"id":"danny-willett","name":"Danny Willett","country":"ENG","amateur":false,"drv":2,"app":2,"sht":3,"put":3,"clt":3},
+  {"id":"jt-poston","name":"J.T. Poston","country":"USA","amateur":false,"drv":2,"app":2,"sht":3,"put":4,"clt":2},
+  {"id":"shane-lowry","name":"Shane Lowry","country":"IRL","amateur":false,"drv":3,"app":3,"sht":3,"put":3,"clt":2},
+  {"id":"wyndham-clark","name":"Wyndham Clark","country":"USA","amateur":false,"drv":4,"app":2,"sht":2,"put":3,"clt":2},
+  {"id":"sam-burns","name":"Sam Burns","country":"USA","amateur":false,"drv":3,"app":2,"sht":3,"put":3,"clt":2},
+  {"id":"davis-thompson","name":"Davis Thompson","country":"USA","amateur":false,"drv":2,"app":2,"sht":2,"put":2,"clt":1},
+  {"id":"min-woo-lee","name":"Min Woo Lee","country":"AUS","amateur":false,"drv":4,"app":3,"sht":2,"put":2,"clt":2},
+  {"id":"jj-spaun","name":"J.J. Spaun","country":"USA","amateur":false,"drv":2,"app":2,"sht":2,"put":2,"clt":2},
+  {"id":"nico-echavarria","name":"Nico Echavarria","country":"COL","amateur":false,"drv":3,"app":2,"sht":2,"put":2,"clt":1},
+  {"id":"stephan-jaeger","name":"Stephan Jaeger","country":"GER","amateur":false,"drv":2,"app":2,"sht":2,"put":2,"clt":2},
+  {"id":"tom-kim","name":"Tom Kim","country":"KOR","amateur":false,"drv":3,"app":3,"sht":2,"put":2,"clt":2},
+  {"id":"dustin-johnson","name":"Dustin Johnson","country":"USA","amateur":false,"drv":5,"app":2,"sht":2,"put":2,"clt":2},
+  {"id":"russell-henley","name":"Russell Henley","country":"USA","amateur":false,"drv":2,"app":2,"sht":3,"put":3,"clt":2},
+  {"id":"chris-kirk","name":"Chris Kirk","country":"USA","amateur":false,"drv":2,"app":2,"sht":3,"put":2,"clt":2},
+  {"id":"bernhard-langer","name":"Bernhard Langer","country":"GER","amateur":false,"drv":1,"app":2,"sht":4,"put":3,"clt":3},
+  {"id":"keegan-bradley","name":"Keegan Bradley","country":"USA","amateur":false,"drv":3,"app":2,"sht":2,"put":2,"clt":2},
+  {"id":"rafael-campos","name":"Rafael Campos","country":"PUR","amateur":false,"drv":2,"app":2,"sht":2,"put":1,"clt":1},
+  {"id":"adam-schenk","name":"Adam Schenk","country":"USA","amateur":false,"drv":2,"app":2,"sht":2,"put":1,"clt":1},
+  {"id":"justin-hastings","name":"Justin Hastings","country":"CAY","amateur":true,"drv":2,"app":1,"sht":1,"put":1,"clt":1},
+  {"id":"sergio-garcia","name":"Sergio Garcia","country":"ESP","amateur":false,"drv":3,"app":3,"sht":4,"put":2,"clt":3},
+  {"id":"mike-weir","name":"Mike Weir","country":"CAN","amateur":false,"drv":1,"app":2,"sht":4,"put":3,"clt":3},
+  {"id":"joe-highsmith","name":"Joe Highsmith","country":"USA","amateur":false,"drv":2,"app":2,"sht":2,"put":1,"clt":1},
+  {"id":"fred-couples","name":"Fred Couples","country":"USA","amateur":false,"drv":2,"app":2,"sht":3,"put":2,"clt":2},
+  {"id":"tony-finau","name":"Tony Finau","country":"USA","amateur":false,"drv":5,"app":3,"sht":2,"put":1,"clt":2},
+  {"id":"brooks-koepka","name":"Brooks Koepka","country":"USA","amateur":false,"drv":4,"app":3,"sht":2,"put":2,"clt":4},
+  {"id":"adam-scott","name":"Adam Scott","country":"AUS","amateur":false,"drv":4,"app":3,"sht":3,"put":3,"clt":3},
+  {"id":"sepp-straka","name":"Sepp Straka","country":"AUT","amateur":false,"drv":3,"app":2,"sht":2,"put":2,"clt":2},
+  {"id":"cameron-smith","name":"Cameron Smith","country":"AUS","amateur":false,"drv":3,"app":3,"sht":4,"put":5,"clt":3},
+  {"id":"billy-horschel","name":"Billy Horschel","country":"USA","amateur":false,"drv":2,"app":2,"sht":3,"put":3,"clt":2},
+  {"id":"phil-mickelson","name":"Phil Mickelson","country":"USA","amateur":false,"drv":2,"app":2,"sht":5,"put":3,"clt":3},
+  {"id":"austin-eckroat","name":"Austin Eckroat","country":"USA","amateur":false,"drv":2,"app":2,"sht":2,"put":2,"clt":1},
+  {"id":"hiroshi-tai","name":"Hiroshi Tai","country":"SIN","amateur":true,"drv":2,"app":1,"sht":2,"put":2,"clt":1},
+  {"id":"kevin-yu","name":"Kevin Yu","country":"TPE","amateur":false,"drv":2,"app":2,"sht":2,"put":1,"clt":1},
+  {"id":"jhonattan-vegas","name":"Jhonattan Vegas","country":"VEN","amateur":false,"drv":3,"app":2,"sht":2,"put":1,"clt":1},
+  {"id":"nicolai-hojgaard","name":"Nicolai Højgaard","country":"DEN","amateur":false,"drv":3,"app":2,"sht":2,"put":2,"clt":2},
+  {"id":"robert-macintyre","name":"Robert MacIntyre","country":"SCO","amateur":false,"drv":4,"app":2,"sht":3,"put":2,"clt":2},
+  {"id":"jose-maria-olazabal","name":"José María Olazábal","country":"ESP","amateur":false,"drv":1,"app":2,"sht":4,"put":2,"clt":3},
+  {"id":"christiaan-bezuidenhout","name":"Christiaan Bezuidenhout","country":"RSA","amateur":false,"drv":2,"app":2,"sht":2,"put":2,"clt":2},
+  {"id":"cameron-young","name":"Cameron Young","country":"USA","amateur":false,"drv":4,"app":2,"sht":2,"put":1,"clt":2},
+  {"id":"lucas-glover","name":"Lucas Glover","country":"USA","amateur":false,"drv":2,"app":2,"sht":2,"put":3,"clt":2},
+  {"id":"patton-kizzire","name":"Patton Kizzire","country":"USA","amateur":false,"drv":2,"app":2,"sht":2,"put":1,"clt":1},
+  {"id":"will-zalatoris","name":"Will Zalatoris","country":"USA","amateur":false,"drv":4,"app":3,"sht":2,"put":1,"clt":2},
+  {"id":"taylor-pendrith","name":"Taylor Pendrith","country":"CAN","amateur":false,"drv":5,"app":2,"sht":2,"put":1,"clt":1},
+  {"id":"cam-davis","name":"Cam Davis","country":"AUS","amateur":false,"drv":2,"app":2,"sht":2,"put":1,"clt":1},
+  {"id":"evan-beck","name":"Evan Beck","country":"USA","amateur":true,"drv":2,"app":1,"sht":1,"put":1,"clt":1},
+  {"id":"thomas-detry","name":"Thomas Detry","country":"BEL","amateur":false,"drv":2,"app":2,"sht":2,"put":1,"clt":1},
+  {"id":"laurie-canter","name":"Laurie Canter","country":"ENG","amateur":false,"drv":2,"app":2,"sht":2,"put":1,"clt":1},
+  {"id":"matthieu-pavon","name":"Matthieu Pavon","country":"FRA","amateur":false,"drv":3,"app":2,"sht":2,"put":1,"clt":1},
+  {"id":"jose-luis-ballester-barrio","name":"Jose Luis Ballester Barrio","country":"ESP","amateur":true,"drv":2,"app":1,"sht":1,"put":1,"clt":1},
+  {"id":"angel-cabrera","name":"Ángel Cabrera","country":"ARG","amateur":false,"drv":3,"app":2,"sht":3,"put":2,"clt":3},
+  {"id":"thriston-lawrence","name":"Thriston Lawrence","country":"RSA","amateur":false,"drv":2,"app":2,"sht":2,"put":1,"clt":1},
+  {"id":"noah-kent","name":"Noah Kent","country":"USA","amateur":true,"drv":2,"app":1,"sht":1,"put":1,"clt":1},
+  {"id":"nick-dunlap","name":"Nick Dunlap","country":"USA","amateur":false,"drv":2,"app":1,"sht":2,"put":2,"clt":1}
+];
+
+// ============================================================
+// COURSE CONFIGURATION — change this object to adapt to any course
+// ============================================================
+const COURSE_CONFIG = {
+  name: 'Augusta National',
+  event: 'The Masters 2026',
+  par: 72,
+  cutLine: 3,         // +cutLine or worse = cut after R2
+  difficultyMod: 0,   // applied to every round score: +1 = harder, -1 = easier birdie-fest
+  roundStats: ['app', 'put', 'drv', 'clt'],
+  roundNames: ['Thursday', 'Friday', 'Saturday', 'Sunday']
+};
+const ROUND_LABELS = ['R1','R2','R3','R4'];
+
+// ============================================================
+// GAME STATE
+// ============================================================
+let state = {
+  currentRound: 0, // 0 = not started, 1-4
+  scores: {}, // id -> [r1,r2,r3,r4]
+  specials: {}, // id -> { charge:[bool], cap:[bool] }
+  cut: [], // ids of cut players
+  status: 'not_started', // not_started | in_progress | complete
+  windR3: null,
+  momentum: {}, // id -> bool (improved R2 vs R1)
+  awaitingCut: false // true after R2 until user confirms cut line
+};
+
+// ============================================================
+// DICE
+// ============================================================
+function roll3d6() {
+  return Math.ceil(Math.random()*6) + Math.ceil(Math.random()*6) + Math.ceil(Math.random()*6);
+}
+function rollD100() { return Math.ceil(Math.random()*100); }
+function rollD20() { return Math.ceil(Math.random()*20); }
+function rollD6() { return Math.ceil(Math.random()*6); }
+function statMod(s) { return s - 3; }
+
+// ============================================================
+// SCORE TABLE LOOKUP
+// ============================================================
+function lookupScore(total) {
+  if (total >= 18) return 'CHARGE';
+  if (total >= 16) return -4;
+  if (total >= 14) return -3;
+  if (total >= 12) return -2;
+  if (total >= 10) return 0;
+  if (total >= 8)  return 2;
+  if (total >= 5)  return 4;
+  if (total >= 4)  return 6;
+  return 'CAPITULATION'; // total <= 3 only
+}
+
+function resolveCharge() {
+  const d = rollD100();
+  if (d <= 10) return { score: -10, d100: d, label: '−10 (Historic)' };
+  if (d <= 30) return { score: -9, d100: d, label: '−9' };
+  if (d <= 60) return { score: -8, d100: d, label: '−8' };
+  if (d <= 85) return { score: -7, d100: d, label: '−7' };
+  return { score: -6, d100: d, label: '−6' };
+}
+
+function resolveCapitulation() {
+  const d = rollD100();
+  if (d <= 10) return { score: 12, d100: d, label: '+12 (Catastrophe)' };
+  if (d <= 35) return { score: 9, d100: d, label: '+9' };
+  if (d <= 65) return { score: 7, d100: d, label: '+7' };
+  if (d <= 85) return { score: 6, d100: d, label: '+6' };
+  return { score: 5, d100: d, label: '+5' };
+}
+
+// ============================================================
+// CORE ROLL ENGINE
+// ============================================================
+function rollRound(player, roundIndex, leaderboardScores) {
+  const statKey = COURSE_CONFIG.roundStats[roundIndex];
+  const stat = player[statKey];
+  const mod = statMod(stat);
+
+  const dice = [Math.ceil(Math.random()*6), Math.ceil(Math.random()*6), Math.ceil(Math.random()*6)];
+  const rawRoll = dice[0] + dice[1] + dice[2];
+  let total = rawRoll + mod;
+
+  let special = null;
+  let chargeResult = null;
+  let capResult = null;
+  let baseScore;
+
+  const lookup = lookupScore(total);
+
+  if (lookup === 'CHARGE') {
+    chargeResult = resolveCharge();
+    baseScore = chargeResult.score;
+    special = 'charge';
+  } else if (lookup === 'CAPITULATION') {
+    capResult = resolveCapitulation();
+    baseScore = capResult.score;
+    special = 'capitulation';
+  } else {
+    baseScore = lookup;
+  }
+
+  let score = baseScore + COURSE_CONFIG.difficultyMod;
+  const narrative_parts = [];
+
+  // Augusta specials (not on Charge/Cap extremes — they're extreme enough)
+  if (special === null) {
+    // Par 5 Opportunity (R1, R3)
+    if (roundIndex === 0 || roundIndex === 2) {
+      const d6 = rollD6();
+      if (d6 >= 5) {
+        score -= 1;
+        narrative_parts.push(`Par 5 opportunity (d6: ${d6}) — birdie chance taken, −1`);
+      }
+    }
+    // Amen Corner Danger (R2, R4)
+    if (roundIndex === 1 || roundIndex === 3) {
+      const d6 = rollD6();
+      if (d6 === 1) {
+        score += 1;
+        narrative_parts.push(`Amen Corner bites (d6: ${d6}) — costly bogey, +1`);
+      }
+    }
+  }
+
+  // Wind (R3)
+  let windNote = '';
+  if (roundIndex === 2 && state.windR3 !== null) {
+    if (state.windR3 <= 2) { total -= 1; score += 1; windNote = `Wind hurts (d6: ${state.windR3}), +1 penalty`; }
+    else if (state.windR3 >= 5) { total += 1; score -= 1; windNote = `Calm conditions (d6: ${state.windR3}), −1 bonus`; }
+    else windNote = `Neutral wind (d6: ${state.windR3})`;
+  }
+
+  // Pressure (R4) — only if within 3 of lead
+  let pressureNote = '';
+  if (roundIndex === 3 && leaderboardScores) {
+    const currentTotal = (leaderboardScores[player.id] || []).reduce((a,b) => a+(b||0), 0);
+    const leadScore = getLeadScore(leaderboardScores);
+    if (currentTotal - leadScore <= 3) {
+      const presRoll = rollD20();
+      const pressMod = statMod(player.clt);
+      const pressTotal = presRoll + pressMod;
+      if (pressTotal < 12) {
+        score += 2;
+        pressureNote = `Pressure check FAILED (d20: ${presRoll}, mod: ${pressMod >= 0 ? '+'+pressMod : pressMod}, total: ${pressTotal}) — crumbles under Sunday pressure, +2`;
+      } else {
+        pressureNote = `Pressure check passed (d20: ${presRoll}, mod: ${pressMod >= 0 ? '+'+pressMod : pressMod}, total: ${pressTotal})`;
+      }
+    }
+  }
+
+  // Masters Momentum (R4 bonus)
+  if (roundIndex === 3 && state.momentum[player.id]) {
+    score -= 1;
+    narrative_parts.push('Masters Momentum bonus — improved R2 on R1, −1');
+  }
+
+  // Build narrative
+  let narr = '';
+  const scoreSign = s => s === 0 ? 'E' : (s > 0 ? `+${s}` : `${s}`);
+
+  if (special === 'charge') {
+    narr = `<span class="event-charge">⚡ CHARGE — ${player.name} catches fire at Augusta</span>`;
+    narr += `<span class="roll-detail">3d6: [${dice.join(',')}] = ${rawRoll}, stat ${statKey.toUpperCase()} ${stat} (mod ${mod>=0?'+'+mod:mod}), total ${total}</span>`;
+    narr += `<span class="roll-detail">Charge d100: ${chargeResult.d100} → ${chargeResult.label}</span>`;
+  } else if (special === 'capitulation') {
+    narr = `<span class="event-cap">💥 CAPITULATION — ${player.name} falls apart</span>`;
+    narr += `<span class="roll-detail">3d6: [${dice.join(',')}] = ${rawRoll}, stat ${statKey.toUpperCase()} ${stat} (mod ${mod>=0?'+'+mod:mod}), total ${total}</span>`;
+    narr += `<span class="roll-detail">Capitulation d100: ${capResult.d100} → ${capResult.label}</span>`;
+  } else {
+    const bandLabel = scoreSign(baseScore) + ' round';
+    narr = `${player.name}'s ${COURSE_CONFIG.roundNames[roundIndex].toLowerCase()} — 3d6: [${dice.join(',')}] = ${rawRoll}, ${statKey.toUpperCase()} mod ${mod>=0?'+'+mod:mod}, total <strong>${total}</strong> → ${bandLabel}`;
+  }
+
+  if (windNote) narr += `<br><span class="roll-detail">${windNote}</span>`;
+  if (pressureNote) narr += `<br><span class="roll-detail">${pressureNote}</span>`;
+  narrative_parts.forEach(p => { narr += `<br><span class="roll-detail">${p}</span>`; });
+  narr += `<br><strong style="font-size:16px;">Final round score: ${scoreSign(score)}</strong>`;
+
+  return { score, dice, rawRoll, total, special, narrative: narr };
+}
+
+function getLeadScore(leaderboardScores) {
+  let best = Infinity;
+  for (const id in leaderboardScores) {
+    if (state.cut.includes(id)) continue;
+    const t = (leaderboardScores[id] || []).reduce((a,b) => a+(b||0), 0);
+    if (t < best) best = t;
+  }
+  return best === Infinity ? 0 : best;
+}
+
+// ============================================================
+// TOURNAMENT MANAGEMENT
+// ============================================================
+function initScores() {
+  state.scores = {};
+  state.specials = {};
+  state.cut = [];
+  state.momentum = {};
+  PLAYERS.forEach(p => {
+    state.scores[p.id] = [null, null, null, null];
+    state.specials[p.id] = [false, false, false, false];
+  });
+}
+
+function applyCut() {
+  state.cut = [];
+  PLAYERS.forEach(p => {
+    const s = state.scores[p.id];
+    const total = (s[0]||0) + (s[1]||0);
+    if (total >= COURSE_CONFIG.cutLine) state.cut.push(p.id);
+  });
+}
+
+function applyMomentum() {
+  PLAYERS.forEach(p => {
+    const r1 = state.scores[p.id][0];
+    const r2 = state.scores[p.id][1];
+    if (r1 !== null && r2 !== null && r2 < r1) {
+      state.momentum[p.id] = true;
+    }
+  });
+}
+
+function simRoundForAll(roundIndex) {
+  if (roundIndex === 2) {
+    state.windR3 = rollD6();
+  }
+
+  const results = [];
+  PLAYERS.forEach(p => {
+    if (roundIndex >= 2 && state.cut.includes(p.id)) return;
+    if (state.scores[p.id][roundIndex] !== null) return; // already scored via detailed play
+    const result = rollRound(p, roundIndex, state.scores);
+    state.scores[p.id][roundIndex] = result.score;
+    state.specials[p.id][roundIndex] = result.special;
+    results.push({ player: p, result });
+  });
+
+  if (roundIndex === 1) applyMomentum();
+
+  return results;
+}
+
+// ============================================================
+// UI — LEADERBOARD
+// ============================================================
+function getPlayerTotal(id) {
+  return state.scores[id].reduce((a, b) => a + (b || 0), 0);
+}
+
+function sortedPlayers() {
+  return [...PLAYERS].sort((a, b) => {
+    const acut = state.cut.includes(a.id);
+    const bcut = state.cut.includes(b.id);
+    if (acut && !bcut) return 1;
+    if (!acut && bcut) return -1;
+    return getPlayerTotal(a.id) - getPlayerTotal(b.id);
+  });
+}
+
+function formatScore(s) {
+  if (s === null) return '<span style="color:#555">—</span>';
+  const special = state.specials;
+  if (s === 0) return '<span class="score-even">E</span>';
+  if (s < 0) return `<span class="score-under">${s}</span>`;
+  return `<span class="score-over">+${s}</span>`;
+}
+
+function formatTotal(id) {
+  const t = getPlayerTotal(id);
+  const cut = state.cut.includes(id);
+  if (cut) return `<span class="score-over">${t > 0 ? '+'+t : t === 0 ? 'E' : t} CUT</span>`;
+  if (t === 0) return `<span class="score-even">E</span>`;
+  if (t < 0) return `<span class="score-under">${t}</span>`;
+  return `<span class="score-over">+${t}</span>`;
+}
+
+function formatRoundCell(id, roundIdx) {
+  const s = state.scores[id][roundIdx];
+  const sp = state.specials[id] ? state.specials[id][roundIdx] : null;
+  if (s === null) return '<span style="color:#555">—</span>';
+  const cls = sp === 'charge' ? 'charge-cell' : sp === 'capitulation' ? 'cap-cell' : '';
+  const label = s === 0 ? 'E' : s > 0 ? `+${s}` : `${s}`;
+  return cls ? `<span class="${cls}" title="${sp}">${label}</span>` : label;
+}
+
+function renderLeaderboard() {
+  const tbody = document.getElementById('leaderboard-body');
+  const sorted = sortedPlayers();
+  let pos = 1;
+  let cutShown = false;
+  let html = '';
+
+  for (let i = 0; i < sorted.length; i++) {
+    const p = sorted[i];
+    const isCut = state.cut.includes(p.id);
+
+    if (isCut && !cutShown) {
+      cutShown = true;
+      html += `<tr class="cut-separator"><td colspan="9">— CUT —</td></tr>`;
+    }
+
+    const isLeader = !isCut && i === 0 && state.currentRound > 0;
+    const trClass = isCut ? 'cut-row' : isLeader ? 'leader-row' : '';
+    const posLabel = isCut ? 'CUT' : (i > 0 && getPlayerTotal(sorted[i-1].id) === getPlayerTotal(p.id) && !state.cut.includes(sorted[i-1].id) ? 'T' + pos : pos);
+    if (!isCut) {
+      if (i > 0 && getPlayerTotal(sorted[i-1].id) !== getPlayerTotal(p.id)) pos = i + 1;
+    }
+
+    const ri = state.currentRound - 1;
+    const canSim = state.currentRound >= 1 && state.currentRound <= 4
+      && !state.awaitingCut
+      && !(isCut && ri >= 2)
+      && state.scores[p.id][ri] === null;
+    const simBtn = canSim
+      ? `<button class="row-sim-btn" onclick="simSinglePlayer('${p.id}')" title="Sim this round for ${p.name}">▶ Sim</button>`
+      : '';
+
+    html += `<tr class="${trClass}" id="row-${p.id}">
+      <td class="pos-col">${isCut ? 'CUT' : posLabel}</td>
+      <td class="country-col">${p.country}</td>
+      <td class="name-col"><span class="player-name-link" onclick="openDetailedFromLeaderboard('${p.id}')">${p.name}</span>${p.amateur ? ' <span class="amateur-tag">Am</span>' : ''}</td>
+      <td class="round-col">${formatRoundCell(p.id, 0)}</td>
+      <td class="round-col">${formatRoundCell(p.id, 1)}</td>
+      <td class="round-col">${isCut ? '<span style="color:#555">—</span>' : formatRoundCell(p.id, 2)}</td>
+      <td class="round-col">${isCut ? '<span style="color:#555">—</span>' : formatRoundCell(p.id, 3)}</td>
+      <td class="total-col">${formatTotal(p.id)}</td>
+      <td class="action-col">${simBtn}</td>
+    </tr>`;
+  }
+
+  tbody.innerHTML = html;
+  renderRoundBar();
+  updateTournamentPanel();
+}
+
+let splashTimer = null;
+function showScoreSplash(playerName, score, special) {
+  const el = document.getElementById('score-splash');
+  const scoreEl = document.getElementById('splash-score');
+  const playerEl = document.getElementById('splash-player');
+
+  let label, cls;
+  if (special === 'charge') {
+    label = `⚡ CHARGE! ${score}`;
+    cls = 'is-charge';
+  } else if (special === 'capitulation') {
+    label = `💥 CAP! +${score}`;
+    cls = 'is-cap';
+  } else {
+    label = score === 0 ? 'E' : score > 0 ? `+${score}` : `${score}`;
+    cls = '';
+  }
+
+  playerEl.textContent = playerName;
+  scoreEl.textContent = label;
+  scoreEl.className = `splash-score ${cls}`;
+
+  // Reset animation
+  scoreEl.style.animation = 'none';
+  scoreEl.offsetHeight; // reflow
+  scoreEl.style.animation = '';
+
+  el.className = 'show';
+  if (splashTimer) clearTimeout(splashTimer);
+  splashTimer = setTimeout(() => {
+    el.classList.add('fade-out');
+    setTimeout(() => { el.className = ''; }, 500);
+  }, 1400);
+}
+
+function openDetailedFromLeaderboard(playerId) {
+  // Switch to Play tab
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-play').classList.add('active');
+  document.querySelector('nav button:nth-child(2)').classList.add('active');
+
+  // Show the detailed section and set the player
+  const sec = document.getElementById('detailed-section');
+  sec.style.display = 'block';
+  populatePlayerSelect();
+  const sel = document.getElementById('player-select');
+  if ([...sel.options].some(o => o.value === playerId)) {
+    sel.value = playerId;
+    loadPlayerForDetailed();
+  }
+
+  // Open the roll modal immediately
+  openDetailedModal();
+}
+
+function simSinglePlayer(playerId) {
+  const p = PLAYERS.find(x => x.id === playerId);
+  if (!p) return;
+  const ri = state.currentRound - 1;
+  if (ri < 0 || ri > 3) return;
+  if (state.scores[p.id][ri] !== null) return; // already scored
+
+  if (ri === 2 && state.windR3 === null) state.windR3 = rollD6();
+
+  const result = rollRound(p, ri, state.scores);
+  state.scores[p.id][ri] = result.score;
+  state.specials[p.id][ri] = result.special;
+
+  const scoreLabel = result.score === 0 ? 'E' : result.score > 0 ? `+${result.score}` : `${result.score}`;
+  const cls = result.special === 'charge' ? 'charge' : result.special === 'capitulation' ? 'cap' : '';
+  document.getElementById('sim-results').innerHTML =
+    `<div class="sim-result-row"><span>${p.country} ${p.name}</span><span class="${cls}" style="font-weight:bold;">${scoreLabel}</span></div>` +
+    document.getElementById('sim-results').innerHTML;
+
+  showScoreSplash(p.name, result.score, result.special);
+  saveState();
+  renderLeaderboard();
+
+  const row = document.getElementById('row-' + p.id);
+  if (row) {
+    if (result.special === 'charge') { row.classList.add('flash-charge'); setTimeout(() => row.classList.remove('flash-charge'), 1600); }
+    else if (result.special === 'capitulation') { row.classList.add('flash-cap'); setTimeout(() => row.classList.remove('flash-cap'), 1600); }
+  }
+}
+
+function renderRoundBar() {
+  const bar = document.getElementById('round-bar');
+  const labels = COURSE_CONFIG.roundStats.map((stat, i) =>
+    `${ROUND_LABELS[i]} — ${COURSE_CONFIG.roundNames[i]} (${stat.toUpperCase()})`
+  );
+  bar.innerHTML = labels.map((l, i) => {
+    let cls = 'round-badge';
+    if (i + 1 < state.currentRound) cls += ' done';
+    else if (i + 1 === state.currentRound) cls += ' active';
+    return `<span class="${cls}">${l}</span>`;
+  }).join('') + `<span style="margin-left:8px; font-size:11px; color:var(--grey);">Cut: +${COURSE_CONFIG.cutLine} after R2</span>`;
+
+  document.getElementById('current-round-label').textContent =
+    state.currentRound === 0 ? '(Not Started)' :
+    state.currentRound > 4 ? '(Complete)' :
+    `${state.currentRound} — ${COURSE_CONFIG.roundNames[state.currentRound-1]}`;
+}
+
+// ============================================================
+// PLAY ACTIONS
+// ============================================================
+function quickSimRound() {
+  if (state.currentRound >= 4 && state.status === 'complete') {
+    showToast('Tournament complete. Reset to play again.');
+    return;
+  }
+
+  if (state.currentRound === 0) {
+    initScores();
+    state.currentRound = 1;
+    state.status = 'in_progress';
+  } else if (state.currentRound <= 4) {
+    // proceed
+  } else {
+    showToast('All rounds complete.');
+    return;
+  }
+
+  const roundIndex = state.currentRound - 1;
+  const results = simRoundForAll(roundIndex);
+
+  // Build sim results log
+  let log = `<div style="color:var(--gold); font-size:12px; margin-bottom:6px; letter-spacing:1px;">ROUND ${state.currentRound} — ${COURSE_CONFIG.roundNames[roundIndex].toUpperCase()} RESULTS</div>`;
+  if (roundIndex === 2 && state.windR3 !== null) {
+    const windDesc = state.windR3 <= 2 ? '💨 Tough wind day' : state.windR3 >= 5 ? '🌤 Calm conditions' : 'Neutral wind';
+    log += `<div style="color:var(--grey); font-size:11px; margin-bottom:6px;">${windDesc} (d6: ${state.windR3})</div>`;
+  }
+
+  results.sort((a,b) => a.result.score - b.result.score).forEach(({player, result}) => {
+    const sc = result.score;
+    const label = sc === 0 ? 'E' : sc > 0 ? `+${sc}` : `${sc}`;
+    const cls = result.special === 'charge' ? 'charge' : result.special === 'capitulation' ? 'cap' : '';
+    log += `<div class="sim-result-row"><span>${player.country} ${player.name}</span><span class="${cls}">${label}</span></div>`;
+  });
+
+  document.getElementById('sim-results').innerHTML = log;
+  document.getElementById('narrative-box').innerHTML = `<span style="color:var(--grey);">Round ${state.currentRound} complete. ${results.length} players. See results below.</span>`;
+
+  if (roundIndex === 1) {
+    state.awaitingCut = true;
+    saveState();
+    renderLeaderboard();
+    const r2Count = PLAYERS.filter(p => state.scores[p.id][0] !== null && state.scores[p.id][1] !== null).length;
+    document.getElementById('narrative-box').innerHTML =
+      `<span style="color:var(--grey);">Round 2 complete — ${r2Count} players have played 36 holes.</span><br><br>
+       <span style="color:var(--cream); font-size:12px;">Review the leaderboard, then apply the cut when ready.</span><br><br>
+       <button class="mode-btn primary" onclick="showCutSuggestion()" style="margin-top:4px;">✂ Apply Cut &amp; Start Weekend</button>`;
+    return; // confirmCut() will advance currentRound
+  }
+
+  if (state.awaitingCut) {
+    showCutSuggestion();
+    return;
+  }
+
+  state.currentRound++;
+  if (state.currentRound > 4) state.status = 'complete';
+
+  saveState();
+  renderLeaderboard();
+
+  // Winner announcement after R4
+  if (state.status === 'complete') {
+    const winner = sortedPlayers().filter(p => !state.cut.includes(p.id))[0];
+    const wTotal = getPlayerTotal(winner.id);
+    const wLabel = wTotal === 0 ? 'E' : wTotal < 0 ? `${wTotal}` : `+${wTotal}`;
+    document.getElementById('narrative-box').innerHTML =
+      `<strong style="color:var(--gold); font-size:16px;">🏆 ${winner.name} wins The Masters 2026</strong><br>
+       <span class="roll-detail">Final score: ${wLabel}</span><br>
+       <span class="roll-detail">${state.cut.length} players missed the cut</span><br>
+       <span style="font-size:12px; color:var(--grey);">Check the Leaderboard tab for full results.</span>`;
+    showToast(`${winner.name} wins! Check the leaderboard.`);
+  }
+
+  // Flash recent rows
+  setTimeout(() => {
+    results.forEach(({player, result}) => {
+      const row = document.getElementById('row-' + player.id);
+      if (row) {
+        if (result.special === 'charge') row.classList.add('flash-charge');
+        else if (result.special === 'capitulation') row.classList.add('flash-cap');
+        setTimeout(() => row.classList.remove('flash-charge', 'flash-cap'), 1600);
+      }
+    });
+  }, 100);
+}
+
+function fullSim() {
+  initScores();
+  state.currentRound = 1;
+  state.status = 'in_progress';
+
+  for (let r = 0; r < 4; r++) {
+    simRoundForAll(r);
+    if (r === 1) applyCut();
+    state.currentRound = r + 2;
+  }
+  state.currentRound = 5;
+  state.status = 'complete';
+
+  const sorted = sortedPlayers().filter(p => !state.cut.includes(p.id));
+  const winner = sorted[0];
+  const wTotal = getPlayerTotal(winner.id);
+  const wLabel = wTotal === 0 ? 'E' : wTotal < 0 ? `${wTotal}` : `+${wTotal}`;
+
+  document.getElementById('narrative-box').innerHTML =
+    `<strong style="color:var(--gold); font-size:16px;">🏆 ${winner.name} wins The Masters 2026</strong><br>
+     <span class="roll-detail">Final score: ${wLabel}</span><br>
+     <span class="roll-detail">${state.cut.length} players missed the cut at +${COURSE_CONFIG.cutLine}</span><br>
+     <span style="font-size:12px; color:var(--grey);">Check the Leaderboard tab for full results.</span>`;
+  document.getElementById('sim-results').innerHTML = '';
+
+  saveState();
+  renderLeaderboard();
+  showToast(`${winner.name} wins! Check the leaderboard.`);
+}
+
+// ============================================================
+// DETAILED PLAY
+// ============================================================
+function showDetailedPlay() {
+  const sec = document.getElementById('detailed-section');
+  sec.style.display = sec.style.display === 'none' ? 'block' : 'none';
+  if (sec.style.display === 'block') populatePlayerSelect();
+}
+
+function populatePlayerSelect() {
+  const sel = document.getElementById('player-select');
+  const active = PLAYERS.filter(p => !state.cut.includes(p.id));
+  sel.innerHTML = active.map(p => `<option value="${p.id}">${p.name} (${p.country})</option>`).join('');
+  loadPlayerForDetailed();
+}
+
+function loadPlayerForDetailed() {
+  const id = document.getElementById('player-select').value;
+  const p = PLAYERS.find(x => x.id === id);
+  if (!p) return;
+  document.getElementById('player-mini-stats').innerHTML =
+    `DRV ${p.drv} · APP ${p.app} · SHT ${p.sht} · PUT ${p.put} · CLT ${p.clt} &nbsp;|&nbsp; ` +
+    `Running total: ${getPlayerTotalLabel(id)}`;
+}
+
+function getPlayerTotalLabel(id) {
+  const t = getPlayerTotal(id);
+  return t === 0 ? 'E' : t > 0 ? `+${t}` : `${t}`;
+}
+
+function rollDetailedRound() {
+  openDetailedModal();
+}
+
+// ============================================================
+// PLAYERS GRID
+// ============================================================
+function renderPlayers(filter) {
+  const grid = document.getElementById('players-grid');
+  const filtered = PLAYERS.filter(p =>
+    !filter || p.name.toLowerCase().includes(filter.toLowerCase()) || p.country.toLowerCase().includes(filter.toLowerCase())
+  );
+
+  grid.innerHTML = filtered.map(p => {
+    const stats = ['drv','app','sht','put','clt'];
+    const statLabels = ['DRV','APP','SHT','PUT','CLT'];
+    const bars = stats.map((s, i) => `
+      <div class="stat-row">
+        <span class="stat-label">${statLabels[i]}</span>
+        <div class="stat-bar-bg"><div class="stat-bar-fill" style="width:${p[s]*20}%"></div></div>
+        <span class="stat-val">${p[s]}</span>
+      </div>`).join('');
+
+    const total = getPlayerTotalLabel(p.id);
+    const isCut = state.cut.includes(p.id);
+    const borderCol = isCut ? 'var(--maroon)' : 'var(--green-light)';
+
+    return `<div class="player-card" style="border-color:${borderCol}">
+      <div class="player-card-header">
+        <span class="player-card-name">${p.name} ${p.amateur ? '<span class="amateur-tag">Am</span>' : ''}</span>
+        <span class="player-card-country">${p.country}</span>
+      </div>
+      ${bars}
+      <div style="margin-top:8px; font-size:11px; color:var(--grey);">
+        Total: <strong style="color:${getPlayerTotal(p.id) < 0 ? 'var(--red)' : 'var(--cream)'}">${total}</strong>
+        ${isCut ? '<span style="color:#ff8888; margin-left:8px;">CUT</span>' : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function filterPlayers(val) { renderPlayers(val); }
+
+// ============================================================
+// TOURNAMENT PANEL
+// ============================================================
+function updateTournamentPanel() {
+  const labels = ['Not Started', 'Round 1', 'Round 2', 'Round 3', 'Round 4', 'Complete'];
+  document.getElementById('t-current-round').textContent = labels[Math.min(state.currentRound, 5)];
+  const statuses = ['Not Started', 'In Progress', 'In Progress', 'In Progress', 'In Progress', 'Complete'];
+  document.getElementById('t-status').textContent = statuses[Math.min(state.currentRound, 5)];
+}
+
+function resetTournament() {
+  if (!confirm('Reset the tournament? All scores will be lost.')) return;
+  initScores();
+  state.currentRound = 0;
+  state.status = 'not_started';
+  state.windR3 = null;
+  state.momentum = {};
+  state.awaitingCut = false;
+  saveState();
+  renderLeaderboard();
+  renderPlayers();
+  document.getElementById('narrative-box').innerHTML = '<span style="color:var(--grey);">Tournament reset. Select a play mode to begin.</span>';
+  document.getElementById('sim-results').innerHTML = '';
+  showToast('Tournament reset.');
+}
+
+// ============================================================
+// MANUAL SCORE ENTRY
+// ============================================================
+function showManualEntry() {
+  if (state.currentRound < 3) {
+    showToast('Simulate R1 and R2 first, then enter scores manually for R3/R4.');
+    return;
+  }
+  if (state.currentRound > 4) {
+    showToast('Tournament is complete.');
+    return;
+  }
+
+  const roundIndex = state.currentRound - 1;
+  const roundName = COURSE_CONFIG.roundNames[roundIndex];
+  document.getElementById('manual-title').textContent = `Enter Round ${state.currentRound} (${roundName}) Scores`;
+
+  const survivors = sortedPlayers().filter(p => !state.cut.includes(p.id));
+  let html = `<div style="overflow-x:auto;"><table class="manual-entry-table" style="width:auto; min-width:100%;">
+    <thead><tr>
+      <th style="text-align:center; padding:4px 8px; width:40px;">Pos</th>
+      <th style="text-align:left; padding:4px 8px;">Player</th>
+      <th style="text-align:center; padding:4px 8px; width:44px;">R1</th>
+      <th style="text-align:center; padding:4px 8px; width:44px;">R2</th>
+      ${roundIndex >= 3 ? '<th style="text-align:center; padding:4px 8px; width:44px;">R3</th>' : ''}
+      <th style="text-align:center; padding:4px 8px; width:60px;">Total</th>
+      <th style="text-align:center; padding:4px 8px; width:90px;">Score</th>
+    </tr></thead><tbody>`;
+
+  survivors.forEach((p, i) => {
+    const total = getPlayerTotal(p.id);
+    const totalLabel = total === 0 ? 'E' : total > 0 ? `+${total}` : `${total}`;
+    const r1 = state.scores[p.id][0]; const r1l = r1 === null ? '—' : r1 === 0 ? 'E' : r1 > 0 ? `+${r1}` : `${r1}`;
+    const r2 = state.scores[p.id][1]; const r2l = r2 === null ? '—' : r2 === 0 ? 'E' : r2 > 0 ? `+${r2}` : `${r2}`;
+    const r3 = state.scores[p.id][2]; const r3l = r3 === null ? '—' : r3 === 0 ? 'E' : r3 > 0 ? `+${r3}` : `${r3}`;
+    html += `<tr>
+      <td style="padding:4px 8px; color:var(--grey); text-align:center;">${i + 1}</td>
+      <td style="padding:4px 8px;">${p.name} <span style="color:var(--grey); font-size:11px;">${p.country}</span></td>
+      <td style="padding:4px 8px; text-align:center; width:44px;">${r1l}</td>
+      <td style="padding:4px 8px; text-align:center; width:44px;">${r2l}</td>
+      ${roundIndex >= 3 ? `<td style="padding:4px 8px; text-align:center; width:44px;">${r3l}</td>` : ''}
+      <td style="padding:4px 8px; text-align:center; font-weight:bold; width:60px;">${totalLabel}</td>
+      <td style="padding:4px 8px; text-align:center; width:90px;">
+        <input class="score-input" type="text" id="manual-${p.id}" placeholder="e.g. -3" autocomplete="off">
+      </td>
+    </tr>`;
+  });
+
+  html += '</tbody></table></div>';
+  document.getElementById('manual-entry-table').innerHTML = html;
+  document.getElementById('manual-section').style.display = 'block';
+}
+
+function submitManualRound() {
+  const roundIndex = state.currentRound - 1;
+  if (roundIndex < 2 || roundIndex > 3) { showToast('Not a valid round for manual entry.'); return; }
+
+  const survivors = sortedPlayers().filter(p => !state.cut.includes(p.id));
+  const errors = [];
+
+  survivors.forEach(p => {
+    const input = document.getElementById('manual-' + p.id);
+    if (!input) return;
+    const raw = input.value.trim();
+    if (raw === '') return; // skip blanks — allow partial entry
+
+    let val;
+    if (raw.toUpperCase() === 'E' || raw === '0') {
+      val = 0;
+    } else {
+      val = parseInt(raw, 10);
+      if (isNaN(val)) { errors.push(`${p.name}: "${raw}" is not a valid score`); return; }
+    }
+
+    state.scores[p.id][roundIndex] = val;
+    state.specials[p.id][roundIndex] = false;
+  });
+
+  if (errors.length) { showToast(errors[0]); return; }
+
+  // Check if all survivors have a score for this round
+  const allEntered = survivors.every(p => state.scores[p.id][roundIndex] !== null);
+
+  if (allEntered) {
+    if (roundIndex === 1) { applyCut(); applyMomentum(); }
+    state.currentRound++;
+    if (state.currentRound > 4) state.status = 'complete';
+    document.getElementById('manual-section').style.display = 'none';
+    showToast(`Round ${roundIndex + 1} scores entered.`);
+  } else {
+    showToast('Partial scores saved. Enter remaining scores and submit again.');
+  }
+
+  saveState();
+  renderLeaderboard();
+}
+
+// ============================================================
+// PRINT SCORESHEET
+// ============================================================
+function printScoresheet() {
+  // Show all players if no cut applied yet, survivors first (cut at bottom) if cut done
+  const allSorted = sortedPlayers();
+  const survivors = state.cut.length > 0
+    ? allSorted.filter(p => !state.cut.includes(p.id))
+    : allSorted;
+  const cutPlayers = state.cut.length > 0 ? allSorted.filter(p => state.cut.includes(p.id)) : [];
+  const showingAll = state.cut.length === 0;
+
+  const r1stat = COURSE_CONFIG.roundStats[0].toUpperCase();
+  const r2stat = COURSE_CONFIG.roundStats[1].toUpperCase();
+  const r3stat = COURSE_CONFIG.roundStats[2].toUpperCase();
+  const r4stat = COURSE_CONFIG.roundStats[3].toUpperCase();
+
+  const fmod = v => { const m = v - 3; return m > 0 ? `+${m}` : `${m}`; };
+  const fsc = v => v === null ? '' : v === 0 ? 'E' : v > 0 ? `+${v}` : `${v}`;
+  const entryCell = `<td class="print-entry-cell"><div class="entry-line"></div></td>`;
+
+  const makeRow = (p, i, isCutRow) => {
+    const s = state.scores[p.id];
+    const r1l = fsc(s[0]); const r2l = fsc(s[1]); const r3l = fsc(s[2]); const r4l = fsc(s[3]);
+    const tot = (s[0]||0)+(s[1]||0)+(s[2]||0)+(s[3]||0);
+    const hasAny = s.some(v => v !== null);
+    const totalL = hasAny ? (tot === 0 ? 'E' : tot > 0 ? `+${tot}` : `${tot}`) : '';
+    const rowStyle = isCutRow ? ' style="color:#999; font-style:italic;"' : '';
+    return `<tr${rowStyle}>
+      <td style="text-align:center;">${isCutRow ? 'CUT' : i + 1}</td>
+      <td>${p.name}${p.amateur ? ' <em style="font-size:8px;">(A)</em>' : ''}</td>
+      <td style="text-align:center; color:#777;">${p.country}</td>
+      <td class="stat-mod-col">${fmod(p.drv)}</td>
+      <td class="stat-mod-col"><strong>${fmod(p.app)}</strong></td>
+      <td class="stat-mod-col">${fmod(p.sht)}</td>
+      <td class="stat-mod-col">${fmod(p.put)}</td>
+      <td class="stat-mod-col"><strong>${fmod(p.clt)}</strong></td>
+      ${s[0] !== null ? `<td style="text-align:center;">${r1l}</td>` : entryCell}
+      ${s[1] !== null ? `<td style="text-align:center;">${r2l}</td>` : entryCell}
+      ${s[2] !== null ? `<td style="text-align:center;">${r3l}</td>` : entryCell}
+      ${s[3] !== null ? `<td style="text-align:center;">${r4l}</td>` : entryCell}
+      <td style="text-align:center;"><strong>${totalL}</strong></td>
+    </tr>`;
+  };
+
+  let rows = survivors.map((p, i) => makeRow(p, i, false)).join('');
+  if (cutPlayers.length > 0) {
+    rows += `<tr><td colspan="13" style="text-align:center; padding:4px; font-size:9px; letter-spacing:1px; background:#eee; color:#555; font-weight:bold;">— CUT —</td></tr>`;
+    rows += cutPlayers.map(p => makeRow(p, 0, true)).join('');
+  }
+
+  const sheetTitle = showingAll ? 'FULL TOURNAMENT SCORESHEET' : 'WEEKEND SCORESHEET';
+  const sheetSubtitle = showingAll
+    ? `${survivors.length} players — play all 4 rounds on the tabletop`
+    : `After 36 holes — ${survivors.length} players made the cut`;
+
+  document.getElementById('print-scoresheet').innerHTML = `
+    <div style="text-align:center; margin-bottom:10px;">
+      <div style="font-size:18px; font-weight:bold;">${COURSE_CONFIG.event.toUpperCase()}</div>
+      <div style="font-size:11px;">${COURSE_CONFIG.name} &nbsp;|&nbsp; Par ${COURSE_CONFIG.par} &nbsp;|&nbsp; Cut: +${COURSE_CONFIG.cutLine}</div>
+      <div style="font-size:10px; color:#555; margin-top:3px;">${sheetTitle} — ${sheetSubtitle}</div>
+    </div>
+    <table class="print-table">
+      <thead>
+        <tr>
+          <th rowspan="2" style="text-align:center; width:24px;">Pos</th>
+          <th rowspan="2" style="text-align:left;">Player</th>
+          <th rowspan="2" style="text-align:center; width:24px;">CTY</th>
+          <th colspan="5" style="text-align:center; border-bottom:1px solid #bbb; font-size:8px;">Stat Modifiers</th>
+          <th rowspan="2" style="text-align:center; width:30px;">R1<br><span style="font-weight:normal; font-size:7px;">${r1stat}</span></th>
+          <th rowspan="2" style="text-align:center; width:30px;">R2<br><span style="font-weight:normal; font-size:7px;">${r2stat}</span></th>
+          <th rowspan="2" style="text-align:center; width:30px;">R3<br><span style="font-weight:normal; font-size:7px;">${r3stat}</span></th>
+          <th rowspan="2" style="text-align:center; width:30px;">R4<br><span style="font-weight:normal; font-size:7px;">${r4stat}</span></th>
+          <th rowspan="2" style="text-align:center; width:34px;">Total</th>
+        </tr>
+        <tr>
+          <th style="text-align:center; width:24px; font-size:8px; font-weight:normal;">DRV</th>
+          <th style="text-align:center; width:24px; font-size:8px; font-weight:bold;">APP</th>
+          <th style="text-align:center; width:24px; font-size:8px; font-weight:normal;">SHT</th>
+          <th style="text-align:center; width:24px; font-size:8px; font-weight:normal;">PUT</th>
+          <th style="text-align:center; width:24px; font-size:8px; font-weight:bold;">CLT</th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>
+    <div style="margin-top:16px; font-size:9px; border-top:1px solid #999; padding-top:8px;">
+      <strong>SCORING REMINDER</strong> &nbsp;|&nbsp;
+      Roll 3d6 + stat mod &nbsp;|&nbsp;
+      R3 stat: ${r3stat} &nbsp;|&nbsp; R4 stat: ${r4stat}<br>
+      ≥18 → CHARGE (d100: 1-10=−10, 11-30=−9, 31-60=−8, 61-85=−7, 86-100=−6) &nbsp;|&nbsp;
+      ≤3 → CAPITULATION (d100: 1-10=+12, 11-35=+9, 36-65=+7, 66-85=+6, 86-100=+5)<br>
+      R3 Wind: d6 → 1-2 harder (+1 to score), 5-6 calm (−1) &nbsp;|&nbsp;
+      R4 Pressure (within 3 of lead): d20 + CLT mod ≥ 12 to hold nerve, else +2 &nbsp;|&nbsp;
+      Par 5 Opp (R3): d6 → 5-6 improves score −1 &nbsp;|&nbsp;
+      Amen Corner (R4): d6 → 1 worsens score +1
+    </div>`;
+
+  window.print();
+}
+
+// ============================================================
+// EXPORT / IMPORT
+// ============================================================
+function exportJSON() {
+  const data = {
+    version: 1,
+    course: COURSE_CONFIG.name,
+    event: COURSE_CONFIG.event,
+    exportedAt: new Date().toISOString(),
+    currentRound: state.currentRound,
+    status: state.status,
+    windR3: state.windR3,
+    cut: state.cut,
+    momentum: state.momentum,
+    scores: state.scores,
+    specials: state.specials
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'masters-2026-save.json';
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('Game state exported as JSON.');
+}
+
+function exportCSV() {
+  const rows = [['Player','Country','R1','R2','R3','R4','Total','Status']];
+  sortedPlayers().forEach(p => {
+    const s = state.scores[p.id];
+    const fmt = v => v === null ? '' : v === 0 ? 'E' : v > 0 ? `+${v}` : `${v}`;
+    const total = (s[0]||0)+(s[1]||0)+(s[2]||0)+(s[3]||0);
+    const status = state.cut.includes(p.id) ? 'CUT' : state.currentRound > 4 ? 'Finished' : 'In';
+    rows.push([p.name, p.country, fmt(s[0]), fmt(s[1]), fmt(s[2]), fmt(s[3]), fmt(total), status]);
+  });
+  const csv = rows.map(r => r.map(c => `"${c}"`).join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'masters-2026-scores.csv';
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('Scores exported as CSV.');
+}
+
+function importJSON() {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.json';
+  input.onchange = e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      try {
+        const data = JSON.parse(ev.target.result);
+        if (!data.version || !data.scores) { showToast('Invalid save file.'); return; }
+        state.currentRound = data.currentRound || 0;
+        state.status = data.status || 'not_started';
+        state.windR3 = data.windR3 || null;
+        state.cut = data.cut || [];
+        state.momentum = data.momentum || {};
+        state.scores = data.scores || {};
+        state.specials = data.specials || {};
+        // Fill any missing players
+        PLAYERS.forEach(p => {
+          if (!state.scores[p.id]) state.scores[p.id] = [null,null,null,null];
+          if (!state.specials[p.id]) state.specials[p.id] = [false,false,false,false];
+        });
+        saveState();
+        renderLeaderboard();
+        renderPlayers();
+        showToast('Game state loaded from JSON.');
+      } catch(err) {
+        showToast('Failed to load file: ' + err.message);
+      }
+    };
+    reader.readAsText(file);
+  };
+  input.click();
+}
+
+// ============================================================
+// SAVE / LOAD
+// ============================================================
+function saveState() {
+  localStorage.setItem('masters-2026-state', JSON.stringify(state));
+}
+
+function loadState() {
+  const saved = localStorage.getItem('masters-2026-state');
+  if (saved) {
+    try {
+      const parsed = JSON.parse(saved);
+      state = parsed;
+    } catch(e) { /* ignore */ }
+  }
+  // Ensure all players have score arrays
+  PLAYERS.forEach(p => {
+    if (!state.scores[p.id]) state.scores[p.id] = [null,null,null,null];
+    if (!state.specials[p.id]) state.specials[p.id] = [false,false,false,false];
+  });
+  if (state.awaitingCut === undefined) state.awaitingCut = false;
+}
+
+// ============================================================
+// UI HELPERS
+// ============================================================
+function showTab(name) {
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  event.target.classList.add('active');
+  if (name === 'players') renderPlayers();
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+// ============================================================
+// DETAILED ROLL MODAL
+// ============================================================
+let modalState = { player: null, roundIndex: 0, pendingScore: null, diceValues: null, total: null };
+
+function openDetailedModal() {
+  const id = document.getElementById('player-select').value;
+  const p = PLAYERS.find(x => x.id === id);
+  if (!p) return;
+
+  let roundIndex;
+  if (state.currentRound === 0) {
+    initScores(); state.currentRound = 1; state.status = 'in_progress';
+    roundIndex = 0;
+  } else {
+    roundIndex = state.currentRound - 1;
+    if (roundIndex >= 4) { showToast('Tournament complete.'); return; }
+  }
+  if (state.cut.includes(p.id) && roundIndex >= 2) { showToast(`${p.name} missed the cut.`); return; }
+  if (roundIndex === 2 && state.windR3 === null) { state.windR3 = rollD6(); }
+
+  modalState = { player: p, roundIndex, pendingScore: null, diceValues: null, total: null };
+
+  // Player header
+  document.getElementById('modal-player-name').textContent = p.name;
+  const runTotal = getPlayerTotal(p.id);
+  const runLabel = runTotal === 0 ? 'E' : runTotal > 0 ? `+${runTotal}` : `${runTotal}`;
+  document.getElementById('modal-player-meta').textContent = `${p.country}${p.amateur ? ' · Amateur' : ''} · Running total: ${runLabel}`;
+
+  // Stat bars
+  const stats = ['drv','app','sht','put','clt'];
+  const activeStatKey = COURSE_CONFIG.roundStats[roundIndex];
+  const statsHtml = stats.map(s => {
+    const val = p[s];
+    const isActive = s === activeStatKey;
+    return `<div class="modal-stat-col ${isActive ? 'active-stat' : ''}">
+      <span class="modal-stat-label">${s.toUpperCase()}</span>
+      <div class="modal-stat-bar-bg"><div class="modal-stat-bar-fill" style="height:${val*20}%"></div></div>
+      <span class="modal-stat-val">${val}</span>
+    </div>`;
+  }).join('');
+  document.getElementById('modal-stats-row').innerHTML = statsHtml;
+
+  // Round banner
+  const statMod_val = statMod(p[activeStatKey]);
+  let bannerText = `<strong>Round ${roundIndex+1}</strong> — ${COURSE_CONFIG.roundNames[roundIndex]} · Stat: <strong>${activeStatKey.toUpperCase()} ${p[activeStatKey]}</strong> (mod ${statMod_val >= 0 ? '+'+statMod_val : statMod_val})`;
+  if (roundIndex === 2 && state.windR3 !== null) {
+    const windDesc = state.windR3 <= 2 ? '💨 Tough wind (+1 to score)' : state.windR3 >= 5 ? '🌤 Calm (−1 to score)' : 'Neutral wind';
+    bannerText += ` · ${windDesc}`;
+  }
+  document.getElementById('modal-round-banner').innerHTML = bannerText;
+
+  // Score lookup table
+  buildScoreLookup(null);
+
+  // Reset dice
+  ['die-1','die-2','die-3'].forEach(id => {
+    const el = document.getElementById(id);
+    el.textContent = '?';
+    el.className = 'die';
+  });
+  document.getElementById('dice-total-val').textContent = '—';
+  document.getElementById('dice-mod-label').textContent = `+ ${statMod_val >= 0 ? '+'+statMod_val : statMod_val} (${activeStatKey.toUpperCase()} mod)`;
+
+  // Hide d100 and result
+  document.getElementById('modal-d100-area').style.display = 'none';
+  document.getElementById('modal-result-banner').style.display = 'none';
+  document.getElementById('modal-manual-input').value = '';
+
+  // Reset buttons
+  document.getElementById('modal-roll-btn').style.display = '';
+  document.getElementById('modal-roll-btn').disabled = false;
+  document.getElementById('modal-confirm-btn').style.display = 'none';
+
+  document.getElementById('detailed-modal').style.display = 'flex';
+}
+
+function buildScoreLookup(highlightTotal) {
+  const bands = [
+    { range: '≥ 18', score: 'CHARGE', cls: 'lc-charge', min: 18, max: 99 },
+    { range: '16 – 17', score: '−4', cls: '', min: 16, max: 17 },
+    { range: '14 – 15', score: '−3', cls: '', min: 14, max: 15 },
+    { range: '12 – 13', score: '−2', cls: '', min: 12, max: 13 },
+    { range: '10 – 11', score: 'E', cls: '', min: 10, max: 11 },
+    { range: '8 – 9', score: '+2', cls: '', min: 8, max: 9 },
+    { range: '5 – 7', score: '+4', cls: '', min: 5, max: 7 },
+    { range: '4', score: '+6', cls: '', min: 4, max: 4 },
+    { range: '≤ 3', score: 'CAP', cls: 'lc-cap', min: -99, max: 3 }
+  ];
+  const html = bands.map(b => {
+    const isHit = highlightTotal !== null && highlightTotal >= b.min && highlightTotal <= b.max;
+    return `<div class="lookup-cell ${b.cls} ${isHit ? 'lc-highlight' : ''}">
+      <span class="lc-range">${b.range}</span>
+      <span class="lc-score">${b.score}</span>
+    </div>`;
+  }).join('');
+  document.getElementById('modal-score-lookup').innerHTML = html;
+}
+
+function buildD100Lookup(type, highlightD100) {
+  const chargeRows = [
+    { range: '1–10', score: '−10', min:1, max:10 },
+    { range: '11–30', score: '−9', min:11, max:30 },
+    { range: '31–60', score: '−8', min:31, max:60 },
+    { range: '61–85', score: '−7', min:61, max:85 },
+    { range: '86–100', score: '−6', min:86, max:100 }
+  ];
+  const capRows = [
+    { range: '1–10', score: '+12', min:1, max:10 },
+    { range: '11–35', score: '+9', min:11, max:35 },
+    { range: '36–65', score: '+7', min:36, max:65 },
+    { range: '66–85', score: '+6', min:66, max:85 },
+    { range: '86–100', score: '+5', min:86, max:100 }
+  ];
+  const rows = type === 'charge' ? chargeRows : capRows;
+  document.getElementById('d100-table-label').textContent = type === 'charge' ? 'Charge Table (d100)' : 'Capitulation Table (d100)';
+  document.getElementById('modal-d100-lookup').innerHTML = rows.map(r => {
+    const isHit = highlightD100 !== null && highlightD100 >= r.min && highlightD100 <= r.max;
+    return `<div class="d100-cell ${isHit ? 'dc-highlight' : ''}">
+      <span class="dc-range">${r.range}</span>
+      <span class="dc-score">${r.score}</span>
+    </div>`;
+  }).join('');
+}
+
+function rollDiceAnimation() {
+  const p = modalState.player;
+  if (!p) return;
+  document.getElementById('modal-roll-btn').disabled = true;
+
+  // Pre-roll actual dice
+  const dice = [Math.ceil(Math.random()*6), Math.ceil(Math.random()*6), Math.ceil(Math.random()*6)];
+  const rawRoll = dice[0]+dice[1]+dice[2];
+  const mod = statMod(p[COURSE_CONFIG.roundStats[modalState.roundIndex]]);
+  const total = rawRoll + mod;
+
+  const dieEls = [document.getElementById('die-1'), document.getElementById('die-2'), document.getElementById('die-3')];
+  dieEls.forEach(el => { el.className = 'die rolling'; });
+
+  let elapsed = 0;
+  const animInterval = setInterval(() => {
+    elapsed += 80;
+    dieEls.forEach(el => el.textContent = Math.ceil(Math.random()*6));
+    if (elapsed >= 1200) {
+      clearInterval(animInterval);
+      dieEls.forEach((el, i) => {
+        el.textContent = dice[i];
+        el.className = 'die settled';
+      });
+      document.getElementById('dice-total-val').textContent = total;
+      modalState.diceValues = dice;
+      modalState.total = total;
+      buildScoreLookup(total);
+
+      // Now resolve the roll
+      setTimeout(() => resolveModalRoll(total, rawRoll, mod, dice), 400);
+    }
+  }, 80);
+}
+
+function resolveModalRoll(total, rawRoll, mod, dice) {
+  const lookup = lookupScore(total);
+
+  if (lookup === 'CHARGE' || lookup === 'CAPITULATION') {
+    const type = lookup === 'CHARGE' ? 'charge' : 'cap';
+    document.getElementById('modal-d100-area').style.display = 'block';
+    buildD100Lookup(type, null);
+
+    // Animate d100
+    const d100El = document.getElementById('d100-die');
+    d100El.className = 'd100-die rolling';
+    const d100Final = rollD100();
+    let d100Elapsed = 0;
+    const d100Interval = setInterval(() => {
+      d100Elapsed += 80;
+      d100El.textContent = Math.ceil(Math.random()*100);
+      if (d100Elapsed >= 1000) {
+        clearInterval(d100Interval);
+        d100El.textContent = d100Final;
+        d100El.className = 'd100-die settled';
+        buildD100Lookup(type, d100Final);
+
+        let score, label;
+        if (type === 'charge') {
+          if (d100Final<=10) { score=-10; label='−10 (Historic)'; }
+          else if (d100Final<=30) { score=-9; label='−9'; }
+          else if (d100Final<=60) { score=-8; label='−8'; }
+          else if (d100Final<=85) { score=-7; label='−7'; }
+          else { score=-6; label='−6'; }
+        } else {
+          if (d100Final<=10) { score=12; label='+12 (Catastrophe)'; }
+          else if (d100Final<=35) { score=9; label='+9'; }
+          else if (d100Final<=65) { score=7; label='+7'; }
+          else if (d100Final<=85) { score=6; label='+6'; }
+          else { score=5; label='+5'; }
+        }
+        showModalResult(score, type, label);
+      }
+    }, 80);
+  } else {
+    // Normal band
+    showModalResult(lookup, 'normal', null);
+  }
+}
+
+function showModalResult(baseScore, type, d100Label) {
+  const p = modalState.player;
+  const ri = modalState.roundIndex;
+  let score = baseScore + COURSE_CONFIG.difficultyMod;
+  const notes = [];
+
+  if (type === 'normal') {
+    if (ri === 0 || ri === 2) {
+      const d6 = rollD6();
+      if (d6 >= 5) { score -= 1; notes.push(`Par 5 opp (d6:${d6}) −1`); }
+    }
+    if (ri === 1 || ri === 3) {
+      const d6 = rollD6();
+      if (d6 === 1) { score += 1; notes.push(`Amen Corner (d6:${d6}) +1`); }
+    }
+  }
+  if (ri === 2 && state.windR3 !== null) {
+    if (state.windR3 <= 2) { score += 1; notes.push(`Wind +1`); }
+    else if (state.windR3 >= 5) { score -= 1; notes.push(`Calm −1`); }
+  }
+  if (ri === 3) {
+    const currentTotal = (state.scores[p.id]||[]).reduce((a,b)=>a+(b||0),0);
+    const leadScore = getLeadScore(state.scores);
+    if (currentTotal - leadScore <= 3) {
+      const pr = rollD20() + statMod(p.clt);
+      if (pr < 12) { score += 2; notes.push(`Pressure fail +2`); }
+      else { notes.push(`Pressure passed`); }
+    }
+  }
+  if (ri === 3 && state.momentum[p.id]) { score -= 1; notes.push(`Momentum −1`); }
+
+  modalState.pendingScore = score;
+
+  const scoreLabel = score === 0 ? 'E' : score > 0 ? `+${score}` : `${score}`;
+  const bannerCls = type === 'charge' ? 'charge-result' : type === 'cap' ? 'cap-result' : 'normal-result';
+  const bannerEl = document.getElementById('modal-result-banner');
+  bannerEl.style.display = 'block';
+  bannerEl.className = `modal-result-banner ${bannerCls}`;
+
+  let bannerContent = '';
+  if (type === 'charge') bannerContent = `⚡ CHARGE — d100: ${d100Label} &nbsp;|&nbsp; Final: <strong>${scoreLabel}</strong>`;
+  else if (type === 'cap') bannerContent = `💥 CAPITULATION — d100: ${d100Label} &nbsp;|&nbsp; Final: <strong>${scoreLabel}</strong>`;
+  else bannerContent = `Round score: <strong>${scoreLabel}</strong>`;
+  if (notes.length) bannerContent += `<br><span style="font-size:11px; color:var(--grey);">${notes.join(' · ')}</span>`;
+  bannerEl.innerHTML = bannerContent;
+
+  document.getElementById('modal-confirm-btn').style.display = '';
+}
+
+function confirmDetailedRoll() {
+  const p = modalState.player;
+  const ri = modalState.roundIndex;
+  if (modalState.pendingScore === null) return;
+
+  state.scores[p.id][ri] = modalState.pendingScore;
+  state.specials[p.id][ri] = false;
+
+  document.getElementById('narrative-box').innerHTML =
+    `${p.name} — Round ${ri+1}: <strong style="font-size:16px;">${modalState.pendingScore === 0 ? 'E' : modalState.pendingScore > 0 ? '+'+modalState.pendingScore : modalState.pendingScore}</strong>`;
+
+  closeDetailedModal();
+
+  // Don't advance currentRound here — that happens when the full round is completed
+  // via Quick Sim (which rolls the rest of the field) or manually confirming all scores.
+  // Just ensure currentRound is at least pointing at this round.
+  if (state.currentRound === 0) {
+    state.currentRound = ri + 1;
+    state.status = 'in_progress';
+  }
+  saveState();
+  renderLeaderboard();
+}
+
+function applyModalManual() {
+  const raw = document.getElementById('modal-manual-input').value.trim();
+  let val;
+  if (raw.toUpperCase() === 'E' || raw === '0') val = 0;
+  else { val = parseInt(raw, 10); if (isNaN(val)) { showToast('Enter a valid score'); return; } }
+  modalState.pendingScore = val;
+  const scoreLabel = val === 0 ? 'E' : val > 0 ? `+${val}` : `${val}`;
+  const bannerEl = document.getElementById('modal-result-banner');
+  bannerEl.style.display = 'block';
+  bannerEl.className = 'modal-result-banner normal-result';
+  bannerEl.innerHTML = `Manual entry: <strong>${scoreLabel}</strong>`;
+  document.getElementById('modal-confirm-btn').style.display = '';
+}
+
+function closeDetailedModal() {
+  document.getElementById('detailed-modal').style.display = 'none';
+  modalState = { player: null, roundIndex: 0, pendingScore: null, diceValues: null, total: null };
+}
+
+// ============================================================
+// CUT SUGGESTION MODAL
+// ============================================================
+function showCutSuggestion() {
+  const scored = PLAYERS.map(p => ({
+    id: p.id, name: p.name,
+    total: (state.scores[p.id][0]||0) + (state.scores[p.id][1]||0)
+  })).sort((a,b) => a.total - b.total);
+
+  const targetPos = Math.min(64, scored.length - 1);
+  let suggestedLine = scored[targetPos].total;
+  const countAt = line => scored.filter(p => p.total <= line).length;
+
+  const top5 = scored.slice(0,5).map((p,i) => {
+    const t = p.total; const tl = t===0?'E':t>0?`+${t}`:`${t}`;
+    return `${i+1}. ${p.name} (${tl})`;
+  }).join('<br>');
+  const survAt = countAt(suggestedLine);
+
+  document.getElementById('cut-modal-info').innerHTML =
+    `Round 2 complete. <strong>${scored.length}</strong> players have played two rounds.<br><br>
+    <strong style="color:var(--gold);">36-hole leaderboard top 5:</strong><br>
+    <span style="color:var(--grey); font-size:12px;">${top5}</span><br><br>
+    Suggested cut: <strong style="color:var(--gold);">${suggestedLine > 0 ? '+'+suggestedLine : suggestedLine === 0 ? 'E' : suggestedLine}</strong> — <strong>${survAt}</strong> players make the weekend.`;
+
+  document.getElementById('cut-line-input').value = suggestedLine;
+  previewCut();
+  document.getElementById('cut-modal').style.display = 'flex';
+}
+
+function previewCut() {
+  const line = parseInt(document.getElementById('cut-line-input').value, 10);
+  if (isNaN(line)) return;
+  const survivors = PLAYERS.filter(p => {
+    const t = (state.scores[p.id][0]||0) + (state.scores[p.id][1]||0);
+    return t <= line;
+  }).length;
+  document.getElementById('cut-preview').textContent = `→ ${survivors} of ${PLAYERS.length} players advance`;
+}
+
+function confirmCut() {
+  const line = parseInt(document.getElementById('cut-line-input').value, 10);
+  if (isNaN(line)) return;
+  state.cut = [];
+  PLAYERS.forEach(p => {
+    const t = (state.scores[p.id][0]||0) + (state.scores[p.id][1]||0);
+    if (t > line) state.cut.push(p.id);
+  });
+  closeCutModal();
+  state.awaitingCut = false;
+  state.currentRound++;
+  if (state.currentRound > 4) state.status = 'complete';
+  saveState();
+  renderLeaderboard();
+  const lineLabel = line > 0 ? `+${line}` : line === 0 ? 'E' : `${line}`;
+  showToast(`Cut at ${lineLabel} — ${PLAYERS.length - state.cut.length} players make the weekend.`);
+}
+
+function closeCutModal() {
+  document.getElementById('cut-modal').style.display = 'none';
+}
+
+// ============================================================
+// INIT
+// ============================================================
+loadState();
+if (!state.scores) initScores();
+renderLeaderboard();
+renderPlayers();
+updateTournamentPanel();
+renderRoundBar();
+if (state.awaitingCut) {
+  document.getElementById('narrative-box').innerHTML =
+    `<span style="color:var(--grey);">Round 2 complete — review the leaderboard, then apply the cut when ready.</span><br><br>
+     <button class="mode-btn primary" onclick="showCutSuggestion()" style="margin-top:4px;">✂ Apply Cut &amp; Start Weekend</button>`;
+}
+</script>
+</body>
+</html>
